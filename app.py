@@ -58,16 +58,16 @@ def register_prescription():
         prescription_data = {
             "application": "prescriptionRegistry",
             "version": 1,
-            "patient_full_name": "patient_full_name",
-            "patient_dob": "patient_dob",
-            "prescription_date": "prescription_date",
-            "medication_name": "medication_name",
-            "dosage_strength": "dosage_strength",
-            "route_of_administration": "route_of_administration",
-            "frequency_duration": "frequency_duration",
-            "quantity_to_dispense": "quantity_to_dispense",
-            "refill_info": "refill_info",
-            "prescriber_signature": "prescriber_signature"
+            "patient_full_name": patient_full_name,
+            "patient_dob": patient_dob,
+            "prescription_date": prescription_date,
+            "medication_name": medication_name,
+            "dosage_strength": dosage_strength,
+            "route_of_administration": route_of_administration,
+            "frequency_duration": frequency_duration,
+            "quantity_to_dispense": quantity_to_dispense,
+            "refill_info": refill_info,
+            "prescriber_signature": prescriber_signature
         }
 
         # Prepare BaaS API payload according to their specification
