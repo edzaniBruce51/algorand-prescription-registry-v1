@@ -152,12 +152,12 @@
                     </form>
             </div>
 
-            <div class="Prescriptions-section">
+            <div class="prescriptions-section">
                 <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
                 
                 {% if Prescription %}
                     {% for prescription in prescriptions %}
-                    <div class="Prescription-card">
+                    <div class="prescription-card">
                         <div class="patient_full_name">{{ prescription.patient_full_name }}</div>
                         <div class="prescription-info">
                             {% if prescription.patient_dob %}<p><strong>patient_dob: </strong> {{ prescription.patient_dob }}</p>{% endif %}
