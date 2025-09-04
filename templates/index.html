@@ -155,7 +155,7 @@
             <div class="Prescriptions-section">
                 <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
                 
-                {% if Prescriptions %}
+                {% if Prescription %}
                     {% for prescription in prescriptions %}
                     <div class="Prescription-card">
                         <div class="patient_full_name">{{ prescription.patient_full_name }}</div>
