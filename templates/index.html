@@ -154,31 +154,41 @@
 
             <div class="prescriptions-section">
                 <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
-                
-                {% if Prescriptions %}
-                    {% for prescription in prescriptions %}
-                    <div class="prescription-card">
-                        <div class="patient_full_name">{{ prescription.patient_full_name }}</div>
-                        <div class="prescription-info">
-                            {% if prescription.patient_dob %}<p><strong>patient_dob: </strong> {{ prescription.patient_dob }}</p>{% endif %}
-                            {% if prescription.status %}<p><strong>Status: </strong> {{ prescription.status }}</p>{% endif %}
-                            {% if prescription.data_id %}<p><strong>Tracking ID: </strong> {{ prescription.data_id }}</p>{% endif %}
-                            {% if prescription.blockchain_tx_id %}<p><strong>Blockchain Tx: </strong><a href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank" class="prescription-url">{{ prescription.blockchain_tx_id }}</a></p>
-                            <p>
-                                <a href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}" 
-                                class="nav-btn">🔍 Verify Prescription</a>
-                            </p>{% endif %}
+    
+                    {% if prescriptions %}
+                        {% for prescription in prescriptions %}
+                            <div class="prescription-card">
+                                <div class="patient_full_name">{{ prescription.patient_full_name }}</div>
+                                    <div class="prescription-info">
+                                        {% if prescription.patient_dob %}<p><strong>Patient DOB:</strong> {{ prescription.patient_dob }}</p>{% endif %}
+                                        {% if prescription.prescription_date %}<p><strong>Date Issued:</strong> {{ prescription.prescription_date }}</p>{% endif %}
+                                        {% if prescription.medication_name %}<p><strong>Medication:</strong> {{ prescription.medication_name }}</p>{% endif %}
+                                        {% if prescription.dosage_strength %}<p><strong>Dosage:</strong> {{ prescription.dosage_strength }}</p>{% endif %}
+                                        {% if prescription.route %}<p><strong>Route:</strong> {{ prescription.route }}</p>{% endif %}
+                                        {% if prescription.frequency_duration %}<p><strong>Frequency:</strong> {{ prescription.frequency_duration }}</p>{% endif %}
+                                        {% if prescription.quantity %}<p><strong>Quantity:</strong> {{ prescription.quantity }}</p>{% endif %}
+                                        {% if prescription.refill_info %}<p><strong>Refill Info:</strong> {{ prescription.refill_info }}</p>{% endif %}
+                                        {% if prescription.status %}<p><strong>Status:</strong> {{ prescription.status }}</p>{% endif %}
+                                        {% if prescription.data_id %}<p><strong>Tracking ID:</strong> {{ prescription.data_id }}</p>{% endif %}
+                                        {% if prescription.blockchain_tx_id %}
+                                            <p><strong>Blockchain Tx:</strong>
+                                                <a href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" 
+                                                target="_blank" class="prescription-url">{{ prescription.blockchain_tx_id }}</a>
+                                            </p>
+                                            <p>
+                                                <a href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}" 
+                                                class="nav-btn">🔍 Verify Prescription</a>
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                        {% endfor %}    
+                    {% else %}
+                        <div class="empty-state">
+                            <h3>No Prescriptions registered yet</h3>
+                            <p>Be the first to register a prescription on the blockchain!</p>
                         </div>
+                    {% endif %}
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">
-                        <h3>No Prescriptions registered yet</h3>
-                        <p>Be the first to register a prescription on the blockchain!</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 </body>
 </html>
