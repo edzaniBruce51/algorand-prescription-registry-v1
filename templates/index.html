@@ -155,7 +155,7 @@
             <div class="prescriptions-section">
                 <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
                 
-                {% if Prescription %}
+                {% if Prescriptions %}
                     {% for prescription in prescriptions %}
                     <div class="prescription-card">
                         <div class="patient_full_name">{{ prescription.patient_full_name }}</div>
@@ -163,7 +163,7 @@
                             {% if prescription.patient_dob %}<p><strong>patient_dob: </strong> {{ prescription.patient_dob }}</p>{% endif %}
                             {% if prescription.status %}<p><strong>Status: </strong> {{ prescription.status }}</p>{% endif %}
                             {% if prescription.data_id %}<p><strong>Tracking ID: </strong> {{ prescription.data_id }}</p>{% endif %}
-                            {% if prescription.blockchain_tx_id %}<p><strong>Blockchain Tx: </strong><a href="https://testnet.explorer.perawallet.app/tx/{{ song.blockchain_tx_id }}" target="_blank" class="song-url">{{ song.blockchain_tx_id }}</a></p>
+                            {% if prescription.blockchain_tx_id %}<p><strong>Blockchain Tx: </strong><a href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank" class="prescription-url">{{ prescription.blockchain_tx_id }}</a></p>
                             <p>
                                 <a href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}" 
                                 class="nav-btn">🔍 Verify Prescription</a>
