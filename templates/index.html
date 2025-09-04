@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prescription Registry</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 { font-size: 2.5rem; font-weight: 300; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 1.1rem; }
+        
+        .content { padding: 40px 30px; }
+        
+        .flash-success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+        }
+        
+        .form-section h2 { color: #333; margin-bottom: 20px; }
+        
+        input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        input[name="owner"] {
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        input:focus { outline: none; border-color: #667eea; }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .btn:hover { transform: translateY(-2px); }
+        
+        .prescriptions-section h2 { color: #333; margin-bottom: 30px; }
+        
+        .prescription-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .patient_full_name { font-size: 1.4rem; font-weight: 600; color: #333; margin-bottom: 15px; }
+        .prescription-info { color: #666; line-height: 1.6; }
+        .prescription-info strong { color: #333; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        .nav-btn {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            margin-top: 15px;
+        }
+        .nav-btn:hover {
+            background: #f1f1f1;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Prescription Registry</h1>
+            <p>Decentralized prescription registry on Algorand</p>
+        </div>
+        
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="form-section">
+                <h2>Register New Prescription</h2>
+                    <form action="/register_prescription" method="post">
+                        <input type="text" name="patient_full_name" placeholder="Patient's Full Name" required>
+                        <input type="text" name="patient_dob" placeholder="Patient DOB (YYYY-MM-DD)" required>
+                        <input type="text" name="prescription_date" placeholder="Date of Prescription (YYYY-MM-DD)" required>
+
+                        <input type="text" name="medication_name" placeholder="Medication Name" required>
+                        <input type="text" name="dosage_strength" placeholder="Dosage and Strength (e.g., 500mg)" required>
+                        <input type="text" name="route" placeholder="Route of Administration (e.g., oral)" required>
+                        <input type="text" name="frequency_duration" placeholder="Frequency and Duration (e.g., 2x/day for 7 days)" required>
+                        <input type="text" name="quantity" placeholder="Quantity to Dispense" required>
+                        <input type="text" name="refill_info" placeholder="Refill Information" required>
+
+                        <input type="text" name="prescriber_signature" placeholder="Prescriber's Signature and Credentials" required>
+
+                        <button type="submit" class="btn">Register Prescription</button>
+                    </form>
+            </div>
+
+            <div class="Prescriptions-section">
+                <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
+                
+                {% if Prescriptions %}
+                    {% for prescription in prescriptions %}
+                    <div class="Prescription-card">
+                        <div class="patient_full_name">{{ prescription.patient_full_name }}</div>
+                        <div class="prescription-info">
+                            {% if prescription.patient_dob %}<p><strong>patient_dob: </strong> {{ prescription.patient_dob }}</p>{% endif %}
+                            {% if prescription.status %}<p><strong>Status: </strong> {{ prescription.status }}</p>{% endif %}
+                            {% if prescription.data_id %}<p><strong>Tracking ID: </strong> {{ prescription.data_id }}</p>{% endif %}
+                            {% if prescription.blockchain_tx_id %}<p><strong>Blockchain Tx: </strong><a href="https://testnet.explorer.perawallet.app/tx/{{ song.blockchain_tx_id }}" target="_blank" class="song-url">{{ song.blockchain_tx_id }}</a></p>
+                            <p>
+                                <a href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}" 
+                                class="nav-btn">🔍 Verify Prescription</a>
+                            </p>{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <h3>No Prescriptions registered yet</h3>
+                        <p>Be the first to register a prescription on the blockchain!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

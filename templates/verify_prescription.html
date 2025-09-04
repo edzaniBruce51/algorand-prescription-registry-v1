@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Prescription - Prescription Registry</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2rem; font-weight: 300; margin-bottom: 10px; }
+        .content { padding: 40px 30px; }
+        .flash-success { background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 10px; margin-bottom: 30px; }
+        .flash-error { background: #f8d7da; color: #721c24; padding: 15px 20px; border-radius: 10px; margin-bottom: 30px; }
+        .form-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+        }
+        .form-section h2 { color: #333; margin-bottom: 20px; }
+        input, textarea {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-family: monospace;
+        }
+        textarea { min-height: 120px; }
+        input:focus, textarea:focus { outline: none; border-color: #667eea; }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .result-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            word-break: break-word;
+        }
+        pre {
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        .back-btn {
+            display: inline-block;
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .back-btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Verify Prescription</h1>
+            <p>Check if your record is stored on the blockchain</p>
+        </div>
+        <div class="content">
+            <a href="/" class="back-btn">← Back to Registry</a>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="form-section">
+                
+                <h2>Enter Prescription Details</h2>
+                
+                <form method="post">
+                    <label for="transactionId" style="display: block; margin-bottom: 5px; font-weight: bold;">Transaction ID (Required)</label>
+                    <input type="text" name="transactionId" id="transactionId" 
+                           placeholder="e.g., 3X7WRG2MCPKJSMRJONHOJTENMONPENOWRA6RO4OMFZSVYJF45HXA" 
+                           value="{{ tx_id or '' }}" required>
+                    
+                    <label for="jsonPayload" style="display: block; margin-bottom: 5px; font-weight: bold;">JSON Payload</label>
+                    <textarea name="jsonPayload" id="jsonPayload" 
+                              placeholder='{"application": "prescriptionRegistry", "patient_full_name": "Yoel Romero", "patient_dob": "1970-03-19", "prescription_date": "2014-03-25"...}'></textarea>
+                    
+                    <label for="jsonPayloadHash" style="display: block; margin-bottom: 5px; font-weight: bold;">JSON Payload Hash - Base64</label>
+                    <input type="text" name="jsonPayloadHash" id="jsonPayloadHash" 
+                           placeholder="e.g. b3ykUhKHKXQMIshI+pFxOZYqgnUn2o3jzV/sXl67Vc">
+                    
+                    <button type="submit" class="btn"> Verify Prescription</button>
+                </form>
+            </div>
+
+            {% if result %}
+                <div class="result-card">
+                    <h2>Verification Result</h2>
+                    <pre>{{ result | tojson(indent=2) }}</pre>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body> 
+</html>
