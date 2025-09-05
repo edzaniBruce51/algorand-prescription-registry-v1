@@ -173,10 +173,16 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Prescription Registry</h1>
-            <p style="opacity:.95;">Demo: anchor prescription data on testnet. Use synthetic data only.</p>
-        </div>
+        <header class="header">
+            <div>
+                <div class="title">Prescription Registry</div>
+                <div class="subtitle">Demo — anchor prescription data to blockchain (testnet). Use synthetic data only.</div>
+            </div>
+            <nav aria-label="top navigation">
+                <a href="{{ url_for('index') }}" style="color:white; text-decoration:none; font-weight:700; margin-right:10px">View</a>
+                <a href="{{ url_for('verify_prescription') }}" style="color:white; text-decoration:none; opacity:0.95">Verify</a>
+            </nav>
+        </header>
 
         <div class="content">
             <!-- LEFT: Form (multi-step) -->
