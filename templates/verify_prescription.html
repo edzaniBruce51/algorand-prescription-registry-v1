@@ -20,17 +20,17 @@
         </div>
 
         <div style="margin-bottom:10px">
-          <label for="jsonPayload">JSON Payload (optional)</label>
+          <label for="jsonPayload">JSON Payload</label>
           <textarea id="jsonPayload" name="jsonPayload" placeholder='{"application":"prescriptionRegistry", "patient_full_name":"Alice Demo", ...}'></textarea>
         </div>
 
         <div style="margin-bottom:10px">
-          <label for="jsonPayloadHash">JSON Payload Hash - Base64 (optional)</label>
+          <label for="jsonPayloadHash">JSON Payload Hash - Base64</label>
           <input id="jsonPayloadHash" name="jsonPayloadHash" type="text" placeholder="Base64 SHA-256 hash">
         </div>
 
         <div style="display:flex; gap:10px; align-items:center">
-          <a href="/" class="btn secondary">← Back</a>
+          <a href="/" class="btn">← Back</a>
           <button type="submit" class="btn">Verify Prescription</button>
         </div>
       </form>
@@ -45,13 +45,6 @@
   </section>
 {% endblock %}
 
-{% block right_column %}
-  <div class="list-card">
-    <h2>Quick tips</h2>
-    <p class="small muted">Use testnet transaction IDs only. For privacy, prefer hashing the prescription JSON and sending the hash on-chain instead of raw PHI.</p>
-    <hr style="margin:10px 0">
-    <p class="small"><strong>Example:</strong> Provide the tx id and optionally the JSON payload or its SHA-256 base64 hash for verification.</p>
-  </div>
-{% endblock %}
+{% block right_column %}{% endblock %}
 
 {% block extra_scripts %}{% endblock %}
