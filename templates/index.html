@@ -307,7 +307,7 @@
                                     {% endif %}
                                     {% if prescription.data_id %}<span class="small">ID: {{ prescription.data_id }}</span>{% endif %}
                                     {% if prescription.blockchain_tx_id %}
-                                        <span class="small">Blockchain Tx: <a class="prescription-url" href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank">{{ prescription.blockchain_tx_id }}</a>
+                                        <span class="small"><strong>Blockchain Tx: </strong><a class="prescription-url" href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank">{{ prescription.blockchain_tx_id }}</a>
                                         <a class="nav-btn" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}">🔍 Verify</a></span>
                                     {% endif %}
                                 </div>
