@@ -1,194 +1,233 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Prescription Registry</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
-        }
-        
-        .header h1 { font-size: 2.5rem; font-weight: 300; margin-bottom: 10px; }
-        .header p { opacity: 0.9; font-size: 1.1rem; }
-        
-        .content { padding: 40px 30px; }
-        
-        .flash-success {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-        
-        .form-section {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 40px;
-        }
-        
-        .form-section h2 { color: #333; margin-bottom: 20px; }
-        
-        input {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            font-size: 16px;
-            margin-bottom: 20px;
-        }
+{% extends "base.html" %}
+{% block title %}Register Prescription — Prescription Registry{% endblock %}
 
-        input[name="owner"] {
-            font-family: monospace;
-            font-size: 14px;
-        }
-        
-        input:focus { outline: none; border-color: #667eea; }
-        
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            width: 100%;
-        }
-        
-        .btn:hover { transform: translateY(-2px); }
-        
-        .prescriptions-section h2 { color: #333; margin-bottom: 30px; }
-        
-        .prescription-card {
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-        
-        .patient_full_name { font-size: 1.4rem; font-weight: 600; color: #333; margin-bottom: 15px; }
-        .prescription-info { color: #666; line-height: 1.6; }
-        .prescription-info strong { color: #333; }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-        .nav-btn {
-            display: inline-block;
-            background: white;
-            color: #667eea;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 500;
-            text-decoration: none;
-            margin-top: 15px;
-        }
-        .nav-btn:hover {
-            background: #f1f1f1;
-        }
+{% block content %}
+  <!-- LEFT: Form -->
+  <section>
+    <div class="card" aria-live="polite">
+      <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+      <div id="stepTitle" class="small" style="font-weight:700; margin-bottom:8px">Patient Details</div>
 
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Prescription Registry</h1>
-            <p>Decentralized prescription registry on Algorand</p>
-        </div>
-        
-        <div class="content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="flash-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <div class="form-section">
-                <h2>Register New Prescription</h2>
-                    <form action="/register_prescription" method="post">
-                        <input type="text" name="patient_full_name" placeholder="Patient's Full Name" required>
-                        <input type="text" name="patient_dob" placeholder="Patient DOB (YYYY-MM-DD)" required>
-                        <input type="text" name="prescription_date" placeholder="Date of Prescription (YYYY-MM-DD)" required>
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-                        <input type="text" name="medication_name" placeholder="Medication Name" required>
-                        <input type="text" name="dosage_strength" placeholder="Dosage and Strength (e.g., 500mg)" required>
-                        <input type="text" name="route" placeholder="Route of Administration (e.g., oral)" required>
-                        <input type="text" name="frequency_duration" placeholder="Frequency and Duration (e.g., 2x/day for 7 days)" required>
-                        <input type="text" name="quantity" placeholder="Quantity to Dispense" required>
-                        <input type="text" name="refill_info" placeholder="Refill Information" required>
-
-                        <input type="text" name="prescriber_signature" placeholder="Prescriber's Signature and Credentials" required>
-
-                        <button type="submit" class="btn">Register Prescription</button>
-                    </form>
+      <form id="wizardForm" action="/register_prescription" method="post" novalidate>
+        <!-- Step 1 -->
+        <div class="step active" data-step="1">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
+            <div>
+              <label for="patient_full_name">Patient's Full Name</label>
+              <input id="patient_full_name" name="patient_full_name" type="text" placeholder="e.g., Alice Demo" required>
             </div>
+            <div>
+              <label for="patient_dob">Patient DOB</label>
+              <input id="patient_dob" name="patient_dob" type="text" placeholder="YYYY-MM-DD" required>
+            </div>
+          </div>
 
-            <div class="prescriptions-section">
-                <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
-    
-                    {% if prescriptions %}
-                        {% for prescription in prescriptions %}
-                            <div class="prescription-card">
-                                <div class="patient_full_name">{{ prescription.patient_full_name }}</div>
-                                    <div class="prescription-info">
-                                        {% if prescription.patient_dob %}<p><strong>Patient DOB:</strong> {{ prescription.patient_dob }}</p>{% endif %}
-                                        {% if prescription.prescription_date %}<p><strong>Date Issued:</strong> {{ prescription.prescription_date }}</p>{% endif %}
-                                        {% if prescription.medication_name %}<p><strong>Medication:</strong> {{ prescription.medication_name }}</p>{% endif %}
-                                        {% if prescription.dosage_strength %}<p><strong>Dosage:</strong> {{ prescription.dosage_strength }}</p>{% endif %}
-                                        {% if prescription.route %}<p><strong>Route:</strong> {{ prescription.route }}</p>{% endif %}
-                                        {% if prescription.frequency_duration %}<p><strong>Frequency:</strong> {{ prescription.frequency_duration }}</p>{% endif %}
-                                        {% if prescription.quantity %}<p><strong>Quantity:</strong> {{ prescription.quantity }}</p>{% endif %}
-                                        {% if prescription.refill_info %}<p><strong>Refill Info:</strong> {{ prescription.refill_info }}</p>{% endif %}
-                                        {% if prescription.status %}<p><strong>Status:</strong> {{ prescription.status }}</p>{% endif %}
-                                        {% if prescription.data_id %}<p><strong>Tracking ID:</strong> {{ prescription.data_id }}</p>{% endif %}
-                                        {% if prescription.blockchain_tx_id %}
-                                            <p><strong>Blockchain Tx:</strong>
-                                                <a href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" 
-                                                target="_blank" class="prescription-url">{{ prescription.blockchain_tx_id }}</a>
-                                            </p>
-                                            <p>
-                                                <a href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}" 
-                                                class="nav-btn">🔍 Verify Prescription</a>
-                                            </p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                        {% endfor %}    
-                    {% else %}
-                        <div class="empty-state">
-                            <h3>No Prescriptions registered yet</h3>
-                            <p>Be the first to register a prescription on the blockchain!</p>
-                        </div>
-                    {% endif %}
-                    </div>
-</body>
-</html>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
+            <div>
+              <label for="prescription_date">Date of Prescription</label>
+              <input id="prescription_date" name="prescription_date" type="text" placeholder="YYYY-MM-DD" required>
+            </div>
+            <div>
+              <label for="medication_name">Medication Name</label>
+              <input id="medication_name" name="medication_name" type="text" placeholder="e.g., Amoxicillin" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step" data-step="2">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
+            <div>
+              <label for="dosage_strength">Dosage & Strength</label>
+              <input id="dosage_strength" name="dosage_strength" type="text" placeholder="e.g., 500 mg" required>
+            </div>
+            <div>
+              <label for="route_of_administration">Route of Administration</label>
+              <input id="route_of_administration" name="route_of_administration" type="text" placeholder="e.g., oral" required>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
+            <div>
+              <label for="frequency_duration">Frequency & Duration</label>
+              <input id="frequency_duration" name="frequency_duration" type="text" placeholder="e.g., 2x/day for 7 days" required>
+            </div>
+            <div>
+              <label for="quantity_to_dispense">Quantity to Dispense</label>
+              <input id="quantity_to_dispense" name="quantity_to_dispense" type="text" placeholder="e.g., 14" required>
+            </div>
+          </div>
+
+          <div style="margin-bottom:8px">
+            <label for="refill_info">Refill Information</label>
+            <input id="refill_info" name="refill_info" type="text" placeholder="e.g., 1 refill allowed">
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step" data-step="3">
+          <div style="margin-bottom:12px">
+            <label for="prescriber_signature">Prescriber's Signature & Credentials</label>
+            <input id="prescriber_signature" name="prescriber_signature" type="text" placeholder="e.g., Dr John Doe - Reg 12345" required>
+          </div>
+
+          <div style="margin-top:10px">
+            <strong>Review</strong>
+            <div id="reviewSummary" class="small mt-8" style="padding:10px; border-radius:8px; background:#fff; border:1px solid rgba(6,95,70,0.03)"></div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:12px; align-items:center">
+          <button type="button" id="prevBtn" class="btn secondary" style="display:none">← Back</button>
+          <div style="flex:1"></div>
+          <button type="button" id="nextBtn" class="btn">Next →</button>
+          <button type="submit" id="submitBtn" class="btn" style="display:none">Submit</button>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}
+
+{% block right_column %}
+  <div class="list-card">
+    <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
+
+    {% if prescriptions %}
+      {% for prescription in prescriptions %}
+        <div class="prescription-card" role="article" aria-label="Prescription {{ prescription.data_id }}">
+          <div class="title">{{ prescription.patient_full_name }}</div>
+          <p class="small"><strong>Medication:</strong> {{ prescription.medication_name or '-' }}</p>
+          <p class="small"><strong>Date:</strong> {{ prescription.prescription_date or '-' }}</p>
+          <div class="meta">
+            {% if prescription.status %}
+              <span class="badge {{ prescription.status }}">{{ prescription.status|capitalize }}</span>
+            {% endif %}
+            {% if prescription.data_id %}<span class="small">ID: {{ prescription.data_id }}</span>{% endif %}
+            {% if prescription.blockchain_tx_id %}
+              <span class="small">Tx: <a href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank">{{ prescription.blockchain_tx_id }}</a></span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="small muted">
+        No prescriptions registered yet. Register a demo prescription to test the round-trip.
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+  const steps = Array.from(document.querySelectorAll('.step'));
+  const progressBar = document.getElementById('progressBar');
+  const stepTitle = document.getElementById('stepTitle');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const form = document.getElementById('wizardForm');
+  const reviewSummary = document.getElementById('reviewSummary');
+
+  let current = 0;
+  const titles = ['Patient Details','Prescription Details','Prescriber & Review'];
+
+  function showStep(index){
+    steps.forEach((s,i)=> s.classList.toggle('active', i===index));
+    if(stepTitle) stepTitle.textContent = titles[index] || '';
+    const pct = Math.round(((index)/(steps.length-1)) * 100);
+    if(progressBar) progressBar.style.width = pct + '%';
+    if(prevBtn) prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
+    if(nextBtn) nextBtn.style.display = index === steps.length-1 ? 'none' : 'inline-block';
+    if(submitBtn) submitBtn.style.display = index === steps.length-1 ? 'inline-block' : 'none';
+    if(index === steps.length-1) populateReview();
+  }
+
+  function validateStep(index){
+    const inputs = Array.from(steps[index].querySelectorAll('input, textarea'));
+    for(const inp of inputs){
+      if(inp.hasAttribute('required') && !inp.value.trim()){
+        inp.focus();
+        return {ok:false, field: inp};
+      }
+    }
+    return {ok:true};
+  }
+
+  function populateReview(){
+    const get=(name)=> (form.elements[name] ? form.elements[name].value.trim() : '');
+    if(reviewSummary) {
+      reviewSummary.innerHTML = `
+        <div><strong>Patient:</strong> ${get('patient_full_name') || '-'} (${get('patient_dob')||'-'})</div>
+        <div style="margin-top:6px"><strong>Medication:</strong> ${get('medication_name') || '-'} — ${get('dosage_strength') || '-'}</div>
+        <div style="margin-top:6px"><strong>Frequency:</strong> ${get('frequency_duration') || '-'} • <strong>Qty:</strong> ${get('quantity_to_dispense') || get('quantity') || '-'}</div>
+        <div style="margin-top:6px"><strong>Prescriber:</strong> ${get('prescriber_signature') || '-'}</div>
+      `;
+    }
+  }
+
+  // Helper: are all inputs in a given step empty?
+  function stepIsEmpty(index){
+    const inputs = Array.from(steps[index].querySelectorAll('input, textarea'));
+    if(inputs.length === 0) return true;
+    return inputs.every(i => !i.value.trim());
+  }
+
+  // NEXT handler (smart behavior only)
+  if(nextBtn) nextBtn.addEventListener('click', ()=>{
+    // If on step 0 (Patient) and step 1 (Prescription) is totally empty, skip to review
+    if(current === 0 && stepIsEmpty(1)){
+      // validate current step first
+      const res = validateStep(current);
+      if(!res.ok){
+        const node = res.field; node.style.borderColor = '#ff6b6b';
+        setTimeout(()=> node.style.borderColor = '', 1500);
+        return;
+      }
+      current = steps.length - 1; // jump to final step (Review)
+      showStep(current);
+      return;
+    }
+
+    // Normal next behavior with validation
+    const res = validateStep(current);
+    if(!res.ok){
+      const node = res.field; node.style.borderColor = '#ff6b6b';
+      setTimeout(()=> node.style.borderColor = '', 1500);
+      return;
+    }
+    current = Math.min(steps.length-1, current+1);
+    showStep(current);
+  });
+
+  if(prevBtn) prevBtn.addEventListener('click', ()=>{
+    current = Math.max(0, current-1);
+    showStep(current);
+  });
+
+  form.addEventListener('submit', (e)=>{
+    const finalValid = validateStep(current);
+    if(!finalValid.ok){
+      e.preventDefault();
+      const node = finalValid.field; node.style.borderColor = '#ff6b6b'; node.focus();
+      setTimeout(()=> node.style.borderColor = '', 1500);
+    } else {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+    }
+  });
+
+  // init
+  showStep(current);
+})();
+</script>
+{% endblock %}
