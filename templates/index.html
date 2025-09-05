@@ -141,6 +141,31 @@
 
         .small { font-size:0.86rem; color:var(--muted) }
 
+        /* Verify button styling */
+        .nav-btn {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-left: 6px;
+            transition: background 200ms ease;
+        }
+        .nav-btn:hover {
+            background: var(--accent-2);
+        }
+
+        .prescription-url {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .prescription-url:hover {
+            text-decoration: underline;
+        }
+
         /* subtle focus for accessibility */
         input:focus, textarea:focus { outline:none; box-shadow:0 6px 18px rgba(6,95,70,0.06); border-color:rgba(15,118,110,0.9) }
 
@@ -276,7 +301,8 @@
                                     {% endif %}
                                     {% if prescription.data_id %}<span class="small">ID: {{ prescription.data_id }}</span>{% endif %}
                                     {% if prescription.blockchain_tx_id %}
-                                        <span class="small">Tx: <a class="small" href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank">{{ prescription.blockchain_tx_id }}</a></span>
+                                        <span class="small">Blockchain Tx: <a class="prescription-url" href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank">{{ prescription.blockchain_tx_id }}</a>
+                                        <a class="nav-btn" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}">🔍 Verify</a></span>
                                     {% endif %}
                                 </div>
                             </div>
