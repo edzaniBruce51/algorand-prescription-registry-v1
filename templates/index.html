@@ -1,229 +1,412 @@
-{% extends "base.html" %}
-{% block title %}Prescription Registry{% endblock %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prescription Registry</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root{
+            --bg: #f4fbfa;
+            --card: #ffffff;
+            --accent: #0f766e;
+            --accent-2: #065f46;
+            --muted: #6b7280;
+            --shadow: 0 10px 30px rgba(15,23,42,0.05);
+            --radius: 12px;
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--bg);
+            color:#072329;
+            padding:28px;
+            min-height:100vh;
+        }
 
-{% block content %}
-  <!-- LEFT: Form (multi-step) -->
-  <div class="form-card" aria-live="polite">
-    <!-- Progress -->
-    <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+        .container{
+            max-width: 980px;
+            margin: 0 auto;
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
 
-    <!-- Step title -->
-    <div class="step-title" id="stepTitle">Patient Details</div>
+        .header{
+            background: linear-gradient(90deg,var(--accent) 0%, var(--accent-2) 100%);
+            color: #fff;
+            padding: 28px;
+        }
+        .header h1{font-size:1.9rem;margin-bottom:6px}
+        .header p{opacity:0.95}
 
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash-{{ category }}" style="margin-bottom:10px;padding:10px;border-radius:8px;">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+        .content{
+            display:grid;
+            grid-template-columns: 1fr 420px; /* left: form, right: list */
+            gap:22px;
+            padding:22px;
+        }
 
-    <!-- Form (keeps same input `name`s used by your Flask backend) -->
-    <form id="wizardForm" action="/register_prescription" method="post" novalidate>
-      <!-- Step 1: Patient -->
-      <div class="step active" data-step="1" id="step1">
-        <div class="row">
-          <div>
-            <label for="patient_full_name">Patient's Full Name</label>
-            <input id="patient_full_name" name="patient_full_name" type="text" placeholder="e.g., Alice Demo" required>
-          </div>
-          <div>
-            <label for="patient_dob">Patient DOB</label>
-            <input id="patient_dob" name="patient_dob" type="text" placeholder="YYYY-MM-DD" required>
-          </div>
+        /* Responsive: stack columns */
+        @media (max-width:980px){
+            .content{grid-template-columns:1fr; padding:18px}
+        }
+
+        /* ---- Form card (left) ---- */
+        .form-card{
+            background:#f8faf9;
+            border-radius:10px;
+            padding:18px;
+            border:1px solid rgba(6,95,70,0.04);
+        }
+
+        .progress {
+            height:10px;
+            background:#e9f7f4;
+            border-radius:999px;
+            overflow:hidden;
+            margin-bottom:14px;
+        }
+        .progress-bar{
+            height:100%;
+            width:0%;
+            background: linear-gradient(90deg,var(--accent),var(--accent-2));
+            transition: width 300ms ease;
+        }
+
+        .step-title{
+            font-weight:700;
+            margin: 6px 0 12px 0;
+            color:#06303a;
+        }
+
+        form { display:block; }
+        .step { display:none; }
+        .step.active { display:block; }
+
+        .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+        @media (max-width:720px){ .row{ grid-template-columns:1fr } }
+
+        label{ display:block; margin-bottom:6px; font-size:0.88rem; color:var(--muted) }
+        input, textarea {
+            width:100%;
+            padding:10px 12px;
+            border-radius:8px;
+            border:1px solid #e6eef0;
+            font-size:15px;
+            background:white;
+        }
+        textarea{ min-height:88px; resize:vertical }
+
+        .controls{ display:flex; gap:10px; margin-top:8px; align-items:center; }
+        .btn {
+            background: var(--accent);
+            color:white;
+            padding:10px 14px;
+            border-radius:8px;
+            border:none;
+            cursor:pointer;
+            font-weight:700;
+        }
+        .btn.secondary { background:#fff; color:var(--accent); border:1px solid rgba(6,95,70,0.06); }
+        .btn[disabled]{ opacity:0.55; cursor:not-allowed; transform:none; }
+
+        .note { font-size:0.88rem; color:var(--muted); margin-top:6px; }
+
+        /* ---- Right column: prescriptions list ---- */
+        .right-col{ position:relative; }
+        .list-card{
+            background:#fff;
+            border-radius:10px;
+            padding:16px;
+            border:1px solid rgba(2,6,23,0.04);
+            box-shadow:0 6px 18px rgba(2,6,23,0.03);
+            max-height: calc(70vh);
+            overflow:auto;
+        }
+        .list-card h2{ margin-bottom:10px; font-size:1.05rem }
+        .prescription-card{
+            padding:12px;
+            border-radius:8px;
+            border-left:4px solid rgba(15,118,110,0.08);
+            margin-bottom:12px;
+            background:linear-gradient(180deg,#ffffff,#fbfffd);
+        }
+        .prescription-card .title { font-weight:700; color:#06303a; margin-bottom:6px }
+        .prescription-card p{ margin:4px 0; color:var(--muted); font-size:0.95rem }
+        .meta{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:0.86rem; color:var(--muted) }
+        .badge{ padding:5px 8px; border-radius:999px; font-weight:700; font-size:0.78rem }
+        .badge.pending{ background:#fffbeb; color:#92400e; border:1px solid rgba(146,64,14,0.06) }
+        .badge.confirmed{ background:#ecfdf5; color:#065f46; border:1px solid rgba(6,95,70,0.06) }
+        .badge.failed{ background:#fff1f2; color:#7f1d1d; border:1px solid rgba(127,29,29,0.06) }
+
+        .small { font-size:0.86rem; color:var(--muted) }
+
+        /* Verify button styling */
+        .nav-btn {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-left: 6px;
+            transition: background 200ms ease;
+        }
+        .nav-btn:hover {
+            background: var(--accent-2);
+        }
+
+        .prescription-url {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .prescription-url:hover {
+            text-decoration: underline;
+        }
+
+        /* subtle focus for accessibility */
+        input:focus, textarea:focus { outline:none; box-shadow:0 6px 18px rgba(6,95,70,0.06); border-color:rgba(15,118,110,0.9) }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Prescription Registry</h1>
+            <p style="opacity:.95;">Demo: anchor prescription data on testnet. Use synthetic data only.</p>
         </div>
 
-        <div class="row">
-          <div>
-            <label for="prescription_date">Date of Prescription</label>
-            <input id="prescription_date" name="prescription_date" type="text" placeholder="YYYY-MM-DD" required>
-          </div>
-          <div>
-            <label for="medication_name">Medication Name</label>
-            <input id="medication_name" name="medication_name" type="text" placeholder="e.g., Amoxicillin" required>
-          </div>
-        </div>
+        <div class="content">
+            <!-- LEFT: Form (multi-step) -->
+            <div class="form-card" aria-live="polite">
+                <!-- Progress -->
+                <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
 
-        <div class="note small">Tip: press <strong>Next</strong> to continue — fields are saved until submission.</div>
-      </div>
+                <!-- Step title -->
+                <div class="step-title" id="stepTitle">Patient Details</div>
 
-      <!-- Step 2: Prescription Details -->
-      <div class="step" data-step="2" id="step2">
-        <div class="row">
-          <div>
-            <label for="dosage_strength">Dosage & Strength</label>
-            <input id="dosage_strength" name="dosage_strength" type="text" placeholder="e.g., 500 mg" required>
-          </div>
-          <div>
-            <label for="route_of_administration">Route of Administration</label>
-            <input id="route_of_administration" name="route_of_administration" type="text" placeholder="e.g., oral" required>
-          </div>
-        </div>
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash-{{ category }}" style="margin-bottom:10px;padding:10px;border-radius:8px;">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
 
-        <div class="row">
-          <div>
-            <label for="frequency_duration">Frequency & Duration</label>
-            <input id="frequency_duration" name="frequency_duration" type="text" placeholder="e.g., 2x/day for 7 days" required>
-          </div>
-          <div>
-            <label for="quantity_to_dispense">Quantity to Dispense</label>
-            <input id="quantity_to_dispense" name="quantity_to_dispense" type="text" placeholder="e.g., 14" required>
-          </div>
-        </div>
+                <!-- Form (keeps same input `name`s used by your Flask backend) -->
+                <form id="wizardForm" action="/register_prescription" method="post" novalidate>
+                    <!-- Step 1: Patient -->
+                    <div class="step active" data-step="1" id="step1">
+                        <div class="row">
+                            <div>
+                                <label for="patient_full_name">Patient's Full Name</label>
+                                <input id="patient_full_name" name="patient_full_name" type="text" placeholder="e.g., Alice Demo" required>
+                            </div>
+                            <div>
+                                <label for="patient_dob">Patient DOB</label>
+                                <input id="patient_dob" name="patient_dob" type="text" placeholder="YYYY-MM-DD" required>
+                            </div>
+                        </div>
 
-        <div style="margin-bottom:8px;">
-          <label for="refill_info">Refill Information</label>
-          <input id="refill_info" name="refill_info" type="text" placeholder="e.g., 1 refill allowed">
-        </div>
-      </div>
+                        <div class="row">
+                            <div>
+                                <label for="prescription_date">Date of Prescription</label>
+                                <input id="prescription_date" name="prescription_date" type="text" placeholder="YYYY-MM-DD" required>
+                            </div>
+                            <div>
+                                <label for="medication_name">Medication Name</label>
+                                <input id="medication_name" name="medication_name" type="text" placeholder="e.g., Amoxicillin" required>
+                            </div>
+                        </div>
 
-      <!-- Step 3: Prescriber & Review -->
-      <div class="step" data-step="3" id="step3">
-        <div style="margin-bottom:12px;">
-          <label for="prescriber_signature">Prescriber's Signature & Credentials</label>
-          <input id="prescriber_signature" name="prescriber_signature" type="text" placeholder="e.g., Dr John Doe - Reg 12345" required>
-        </div>
+                        <div class="note small">Tip: press <strong>Next</strong> to continue — fields are saved until submission.</div>
+                    </div>
 
-        <div style="margin-top:10px;">
-          <strong>Review before submitting:</strong>
-          <div class="small" style="margin-top:8px;">Use the submit button below to register the prescription — it will be sent to the BaaS provider and queued for blockchain anchoring.</div>
+                    <!-- Step 2: Prescription Details -->
+                    <div class="step" data-step="2" id="step2">
+                        <div class="row">
+                            <div>
+                                <label for="dosage_strength">Dosage & Strength</label>
+                                <input id="dosage_strength" name="dosage_strength" type="text" placeholder="e.g., 500 mg" required>
+                            </div>
+                            <div>
+                                <label for="route_of_administration">Route of Administration</label>
+                                <input id="route_of_administration" name="route_of_administration" type="text" placeholder="e.g., oral" required>
+                            </div>
+                        </div>
 
-          <!-- Small inline summary (JS will populate) -->
-          <div id="reviewSummary" style="margin-top:12px;padding:12px;border-radius:8px;background:#fff;border:1px solid rgba(6,95,70,0.03);"></div>
-        </div>
-      </div>
+                        <div class="row">
+                            <div>
+                                <label for="frequency_duration">Frequency & Duration</label>
+                                <input id="frequency_duration" name="frequency_duration" type="text" placeholder="e.g., 2x/day for 7 days" required>
+                            </div>
+                            <div>
+                                <label for="quantity_to_dispense">Quantity to Dispense</label>
+                                <input id="quantity_to_dispense" name="quantity_to_dispense" type="text" placeholder="e.g., 14" required>
+                            </div>
+                        </div>
 
-      <!-- Controls -->
-      <div class="controls" style="margin-top:14px;">
-        <button type="button" class="btn secondary" id="prevBtn" style="display:none">← Back</button>
-        <div style="flex:1"></div>
-        <button type="button" class="btn" id="nextBtn">Next →</button>
-        <button type="submit" class="btn" id="submitBtn" style="display:none">Submit</button>
-      </div>
-    </form>
-  </div>
-{% endblock %}
+                        <div style="margin-bottom:8px;">
+                            <label for="refill_info">Refill Information</label>
+                            <input id="refill_info" name="refill_info" type="text" placeholder="e.g., 1 refill allowed">
+                        </div>
+                    </div>
 
-{% block right_column %}
-  <!-- RIGHT: Prescriptions list summary -->
-  <div class="list-card">
-    <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
+                    <!-- Step 3: Prescriber & Review -->
+                    <div class="step" data-step="3" id="step3">
+                        <div style="margin-bottom:12px;">
+                            <label for="prescriber_signature">Prescriber's Signature & Credentials</label>
+                            <input id="prescriber_signature" name="prescriber_signature" type="text" placeholder="e.g., Dr John Doe - Reg 12345" required>
+                        </div>
 
-    {% if prescriptions %}
-      {% for prescription in prescriptions %}
-        <div class="prescription-card" role="article" aria-label="Prescription {{ prescription.data_id }}">
-          <div class="title">{{ prescription.patient_full_name }}</div>
-          <p class="small"><strong>Medication:</strong> {{ prescription.medication_name or '-' }}</p>
-          <p class="small"><strong>Date:</strong> {{ prescription.prescription_date or '-' }}</p>
+                        <div style="margin-top:10px;">
+                            <strong>Review before submitting:</strong>
+                            <div class="small" style="margin-top:8px;">Use the submit button below to register the prescription — it will be sent to the BaaS provider and queued for blockchain anchoring.</div>
 
-          <div class="meta">
-            {% if prescription.status %}
-              <p class="badge {{ prescription.status }}"><strong>Status:</strong>{{ prescription.status|capitalize }}</p>
-            {% endif %}
-            {% if prescription.data_id %}<span class="small">ID: {{ prescription.data_id }}</span>{% endif %}
-            {% if prescription.blockchain_tx_id %}
-              <span class="small"><strong>Blockchain Tx:</strong>
-                 
-                <a class="prescription-url" href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank">
-                  {{ prescription.blockchain_tx_id[:10] }}...{{ prescription.blockchain_tx_id[-6:] }}
-                </a>
-                <a class="nav-btn" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}">🔍 Verify prescription</a>
-              </span>
-            {% endif %}
-          </div>
-        </div>
-      {% endfor %}
-    {% else %}
-      <div class="empty-state">
-        <h3 style="margin-bottom:8px">No Prescriptions yet</h3>
-        <p class="small">Register a demo prescription to see the round-trip with the BaaS provider (testnet).</p>
-      </div>
-    {% endif %}
-  </div>
-{% endblock %}
+                            <!-- Small inline summary (JS will populate) -->
+                            <div id="reviewSummary" style="margin-top:12px;padding:12px;border-radius:8px;background:#fff;border:1px solid rgba(6,95,70,0.03);"></div>
+                        </div>
+                    </div>
 
-{% block extra_scripts %}
-<script>
-(function(){
-  const steps = Array.from(document.querySelectorAll('.step'));
-  const progressBar = document.getElementById('progressBar');
-  const stepTitle = document.getElementById('stepTitle');
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-  const submitBtn = document.getElementById('submitBtn');
-  const form = document.getElementById('wizardForm');
-  const reviewSummary = document.getElementById('reviewSummary');
+                    <!-- Controls -->
+                    <div class="controls" style="margin-top:14px;">
+                        <button type="button" class="btn secondary" id="prevBtn" style="display:none">← Back</button>
+                        <div style="flex:1"></div>
+                        <button type="button" class="btn" id="nextBtn">Next →</button>
+                        <button type="submit" class="btn" id="submitBtn" style="display:none">Submit</button>
+                    </div>
+                </form>
+            </div>
 
-  let current = 0;
-  const titles = ['Patient Details','Prescription Details','Prescriber & Review'];
+            <!-- RIGHT: Prescriptions list summary -->
+            <div class="right-col">
+                <div class="list-card">
+                    <h2>Registered Prescriptions ({{ prescriptions|length }})</h2>
 
-  function showStep(index){
-    steps.forEach((s,i)=> s.classList.toggle('active', i===index));
-    stepTitle.textContent = titles[index] || '';
-    const pct = Math.round(((index) / (steps.length-1)) * 100);
-    progressBar.style.width = pct + '%';
-    prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
-    nextBtn.style.display = index === steps.length-1 ? 'none' : 'inline-block';
-    submitBtn.style.display = index === steps.length-1 ? 'inline-block' : 'none';
-    if(index === steps.length-1) populateReview();
-  }
+                    {% if prescriptions %}
+                        {% for prescription in prescriptions %}
+                            <div class="prescription-card" role="article" aria-label="Prescription {{ prescription.data_id }}">
+                                <div class="title">{{ prescription.patient_full_name }}</div>
+                                <p class="small"><strong>Medication:</strong> {{ prescription.medication_name or '-' }}</p>
+                                <p class="small"><strong>Date:</strong> {{ prescription.prescription_date or '-' }}</p>
 
-  function validateStep(index){
-    const inputs = Array.from(steps[index].querySelectorAll('input, textarea'));
-    for(const inp of inputs){
-      if(inp.hasAttribute('required') && !inp.value.trim()){
-        inp.focus();
-        return {ok:false, field: inp};
-      }
-    }
-    return {ok:true};
-  }
+                                <div class="meta">
+                                    {% if prescription.status %}
+                                        <span class="badge {{ prescription.status }}">{{ prescription.status|capitalize }}</span>
+                                    {% endif %}
+                                    {% if prescription.data_id %}<span class="small">ID: {{ prescription.data_id }}</span>{% endif %}
+                                    {% if prescription.blockchain_tx_id %}
+                                        <span class="small">Blockchain Tx: <a class="prescription-url" href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}" target="_blank">{{ prescription.blockchain_tx_id }}</a>
+                                        <a class="nav-btn" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}">🔍 Verify</a></span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <h3 style="margin-bottom:8px">No Prescriptions yet</h3>
+                            <p class="small">Register a demo prescription to see the round-trip with the BaaS provider (testnet).</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div><!-- /content -->
+    </div><!-- /container -->
 
-  function populateReview(){
-    const get = (name)=> (form.elements[name] ? form.elements[name].value.trim() : '');
-    reviewSummary.innerHTML = `
-      <div><strong>Patient:</strong> ${get('patient_full_name') || '-'} (${get('patient_dob')||'-'})</div>
-      <div style="margin-top:6px"><strong>Medication:</strong> ${get('medication_name') || '-'} — ${get('dosage_strength') || '-'}</div>
-      <div style="margin-top:6px"><strong>Frequency:</strong> ${get('frequency_duration') || '-'} • <strong>Qty:</strong> ${get('quantity_to_dispense') || get('quantity') || '-'}</div>
-      <div style="margin-top:6px"><strong>Prescriber:</strong> ${get('prescriber_signature') || '-'}</div>
-    `;
-  }
+    <script>
+        (function(){
+            const steps = Array.from(document.querySelectorAll('.step'));
+            const progressBar = document.getElementById('progressBar');
+            const stepTitle = document.getElementById('stepTitle');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            const form = document.getElementById('wizardForm');
+            const reviewSummary = document.getElementById('reviewSummary');
 
-  nextBtn.addEventListener('click', ()=>{
-    const res = validateStep(current);
-    if(!res.ok) {
-      const node = res.field;
-      node.style.borderColor = '#ff6b6b';
-      setTimeout(()=> node.style.borderColor = '', 1500);
-      return;
-    }
-    current = Math.min(steps.length-1, current+1);
-    showStep(current);
-  });
+            let current = 0;
+            const titles = ['Patient Details','Prescription Details','Prescriber & Review'];
 
-  prevBtn.addEventListener('click', ()=>{
-    current = Math.max(0, current-1);
-    showStep(current);
-  });
+            function showStep(index){
+                steps.forEach((s,i)=> s.classList.toggle('active', i===index));
+                stepTitle.textContent = titles[index] || '';
+                // progress
+                const pct = Math.round(((index) / (steps.length-1)) * 100);
+                progressBar.style.width = pct + '%';
+                // buttons
+                prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
+                nextBtn.style.display = index === steps.length-1 ? 'none' : 'inline-block';
+                submitBtn.style.display = index === steps.length-1 ? 'inline-block' : 'none';
+                // populate review if review step
+                if(index === steps.length-1) populateReview();
+            }
 
-  form.addEventListener('submit', (e)=>{
-    const finalValid = validateStep(current);
-    if(!finalValid.ok){
-      e.preventDefault();
-      const node = finalValid.field;
-      node.style.borderColor = '#ff6b6b';
-      node.focus();
-      setTimeout(()=> node.style.borderColor = '', 1500);
-    } else {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Submitting...';
-    }
-  });
+            function validateStep(index){
+                // ensure required inputs inside the step are filled
+                const inputs = Array.from(steps[index].querySelectorAll('input, textarea'));
+                for(const inp of inputs){
+                    if(inp.hasAttribute('required') && !inp.value.trim()){
+                        inp.focus();
+                        return {ok:false, field: inp};
+                    }
+                }
+                return {ok:true};
+            }
 
-  showStep(current);
-})();
-</script>
-{% endblock %}
+            function populateReview(){
+                // gather form values and present a compact summary
+                const get = (name)=> (form.elements[name] ? form.elements[name].value.trim() : '');
+                reviewSummary.innerHTML = `
+                    <div><strong>Patient:</strong> ${get('patient_full_name') || '-'} (${get('patient_dob')||'-'})</div>
+                    <div style="margin-top:6px"><strong>Medication:</strong> ${get('medication_name') || '-'} — ${get('dosage_strength') || '-'}</div>
+                    <div style="margin-top:6px"><strong>Frequency:</strong> ${get('frequency_duration') || '-'} • <strong>Qty:</strong> ${get('quantity_to_dispense') || get('quantity') || '-'}</div>
+                    <div style="margin-top:6px"><strong>Prescriber:</strong> ${get('prescriber_signature') || '-'}</div>
+                `;
+            }
+
+            nextBtn.addEventListener('click', ()=>{
+                const res = validateStep(current);
+                if(!res.ok) {
+                    // small inline error visual
+                    const node = res.field;
+                    node.style.borderColor = '#ff6b6b';
+                    setTimeout(()=> node.style.borderColor = '', 1500);
+                    return;
+                }
+                current = Math.min(steps.length-1, current+1);
+                showStep(current);
+            });
+
+            prevBtn.addEventListener('click', ()=>{
+                current = Math.max(0, current-1);
+                showStep(current);
+            });
+
+            // on submit: basic final validation (all steps)
+            form.addEventListener('submit', (e)=>{
+                // let browser handle required attribute, but ensure final step fields are ok
+                const finalValid = validateStep(current);
+                if(!finalValid.ok){
+                    e.preventDefault();
+                    const node = finalValid.field;
+                    node.style.borderColor = '#ff6b6b';
+                    node.focus();
+                    setTimeout(()=> node.style.borderColor = '', 1500);
+                } else {
+                    // Allow submission — UI shows submitting state
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Submitting...';
+                }
+            });
+
+            // initiliaze
+            showStep(current);
+        })();
+    </script>
+</body>
+</html>
