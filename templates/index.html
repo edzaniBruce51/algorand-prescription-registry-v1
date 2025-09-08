@@ -18,6 +18,8 @@
   .prescription-card { background:#fff; border:1px solid rgba(6,95,70,0.08); border-radius:10px; padding:12px; margin-bottom:12px; }
   .title { font-weight:700; margin-bottom:6px; }
   .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; font-size:.75rem; color:#555; }
+  .patient-details { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  @media (max-width:720px){ .patient-details{ grid-template-columns:1fr } }
 </style>
 
 <div class="card" aria-live="polite">
@@ -121,15 +123,17 @@
       <div class="prescription-card" role="article" aria-label="Prescription {{ prescription.data_id }}" data-id="{{ prescription.data_id }}">
         <div class="title">{{ prescription.patient_full_name }}</div>
 
-        <p class="small"><strong>DOB:</strong> {{ prescription.patient_dob or '-' }}</p>
-        <p class="small"><strong>Medication:</strong> {{ prescription.medication_name or '-' }}</p>
-        <p class="small"><strong>Date:</strong> {{ prescription.prescription_date or '-' }}</p>
-        <p class="small"><strong>Dosage:</strong> {{ prescription.dosage_strength or '-' }}</p>
-        <p class="small"><strong>Route:</strong> {{ prescription.route_of_administration or '-' }}</p>
-        <p class="small"><strong>Frequency:</strong> {{ prescription.frequency_duration or '-' }}</p>
-        <p class="small"><strong>Quantity:</strong> {{ prescription.quantity_to_dispense or '-' }}</p>
-        <p class="small"><strong>Refill:</strong> {{ prescription.refill_info or '-' }}</p>
-        <p class="small"><strong>Prescriber:</strong> {{ prescription.prescriber_signature or '-' }}</p>
+        <div class="patient-details">
+          <p class="small"><strong>DOB:</strong> {{ prescription.patient_dob or '-' }}</p>
+          <p class="small"><strong>Medication:</strong> {{ prescription.medication_name or '-' }}</p>
+          <p class="small"><strong>Date:</strong> {{ prescription.prescription_date or '-' }}</p>
+          <p class="small"><strong>Dosage:</strong> {{ prescription.dosage_strength or '-' }}</p>
+          <p class="small"><strong>Route:</strong> {{ prescription.route_of_administration or '-' }}</p>
+          <p class="small"><strong>Frequency:</strong> {{ prescription.frequency_duration or '-' }}</p>
+          <p class="small"><strong>Quantity:</strong> {{ prescription.quantity_to_dispense or '-' }}</p>
+          <p class="small"><strong>Refill:</strong> {{ prescription.refill_info or '-' }}</p>
+          <p class="small"><strong>Prescriber:</strong> {{ prescription.prescriber_signature or '-' }}</p>
+        </div>
 
         <div class="meta">
           {% if prescription.status %}<span class="badge">{{ prescription.status|capitalize }}</span>{% endif %}
@@ -145,7 +149,13 @@
           <code class="payload-hash">{{ prescription.jsonPayloadHash or 'computing…' }}</code>
         </div>
 
-        <pre class="json-view payload-json">{{ prescription.jsonPayload or {} | tojson(indent=2) }}</pre>
+        <div style="margin-top:8px;"><strong>Prescription Payload:</strong></div>
+        <pre class="json-view payload-json">
+{{ prescription.jsonPayload 
+   | default('{}') 
+   | tojson(indent=2) 
+}}
+        </pre>
       </div>
     {% endfor %}
   {% else %}
@@ -197,7 +207,7 @@
   showStep(current);
 })();
 
-/* ---------- Live prescription status & payload update ---------- */
+/* ---------- Live prescription status & hash update ---------- */
 async function updatePrescriptions() {
   try {
     const res = await fetch('/prescriptions_json');
@@ -228,16 +238,16 @@ async function updatePrescriptions() {
       const hashElem = card.querySelector('.payload-hash');
       if(hashElem) hashElem.textContent = prescription.jsonPayloadHash || 'computing…';
 
-      // Update full JSON payload nicely
+      // Update full JSON payload
       const jsonElem = card.querySelector('.json-view');
       if(jsonElem) {
-        if(prescription.jsonPayload){
-          let payloadObj = typeof prescription.jsonPayload === 'string'
-                          ? JSON.parse(prescription.jsonPayload)
-                          : prescription.jsonPayload;
-          jsonElem.textContent = JSON.stringify(payloadObj, null, 2);
+        if (prescription.jsonPayload) {
+            let payloadObj = typeof prescription.jsonPayload === 'string' 
+                            ? JSON.parse(prescription.jsonPayload) 
+                            : prescription.jsonPayload;
+            jsonElem.textContent = JSON.stringify(payloadObj, null, 2);
         } else {
-          jsonElem.textContent = '{}';
+            jsonElem.textContent = '{}';
         }
       }
     }
