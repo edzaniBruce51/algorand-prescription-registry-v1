@@ -140,7 +140,7 @@
           {% if prescription.data_id %}<span class="small">ID: {{ prescription.data_id }}</span>{% endif %}
           {% if prescription.baas_task_id %}<span class="small">Task: {{ prescription.baas_task_id }}</span>{% endif %}
           {% if prescription.blockchain_tx_id %}
-            <a class="btn verify" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}" target="_blank">🔍 Verify</a>
+            <a class="btn verify" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}" >🔍 Verify</a>
           {% endif %}
         </div>
 
