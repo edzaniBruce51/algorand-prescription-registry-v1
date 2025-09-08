@@ -162,6 +162,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{% block extra_scripts %}
 <script>
 /* ---------- Wizard logic ---------- */
 (function(){
@@ -201,36 +202,56 @@
   showStep(current);
 })();
 
-/* ---------- Live prescription status update ---------- */
+/* ---------- Live prescription status & hash update ---------- */
 async function updatePrescriptions() {
   try {
     const res = await fetch('/prescriptions_json');
     const data = await res.json();
 
-    data.forEach(prescription => {
+    for(const prescription of data){
       const card = document.querySelector(`.prescription-card[data-id="${prescription.data_id}"]`);
-      if (card) {
-        const badge = card.querySelector('.badge');
-        if(badge) badge.textContent = prescription.status || 'pending';
+      if(!card) continue;
 
-        const txLink = card.querySelector('.prescription-url');
-        if(txLink && prescription.blockchain_tx_id) {
-          txLink.href = `https://testnet.explorer.perawallet.app/tx/${prescription.blockchain_tx_id}`;
-          txLink.textContent = prescription.blockchain_tx_id;
+      // Update status
+      const badge = card.querySelector('.badge');
+      if(badge) badge.textContent = prescription.status || 'pending';
+
+      // Update verify button
+      let verifyBtn = card.querySelector('.btn.verify');
+      if(prescription.blockchain_tx_id){
+        if(!verifyBtn){
+          verifyBtn = document.createElement('a');
+          verifyBtn.className = 'btn verify';
+          verifyBtn.textContent = '🔍 Verify';
+          verifyBtn.target = '_blank';
+          card.querySelector('.meta').appendChild(verifyBtn);
         }
-
-        const hashElem = card.querySelector('.payload-hash');
-        if(hashElem && prescription.jsonPayloadHash) hashElem.textContent = prescription.jsonPayloadHash;
-
-        const jsonElem = card.querySelector('.json-view');
-        if(jsonElem) jsonElem.textContent = JSON.stringify(prescription, null, 2);
+        verifyBtn.href = `/verify_prescription?tx_id=${prescription.blockchain_tx_id}`;
       }
-    });
+
+      // Compute payload hash if not present
+      const hashElem = card.querySelector('.payload-hash');
+      if(hashElem){
+        if(!prescription.jsonPayloadHash && prescription.jsonPayload){
+          const msgUint8 = new TextEncoder().encode(JSON.stringify(prescription.jsonPayload));
+          const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+          prescription.jsonPayloadHash = hashHex;
+        }
+        hashElem.textContent = prescription.jsonPayloadHash || 'computing…';
+      }
+
+      // Update full JSON
+      const jsonElem = card.querySelector('.json-view');
+      if(jsonElem) jsonElem.textContent = JSON.stringify(prescription, null, 2);
+    }
   } catch(err) {
     console.error('Error fetching prescriptions:', err);
   }
 }
 
+// Poll every 5 seconds
 setInterval(updatePrescriptions, 5000);
 updatePrescriptions();
 </script>
