@@ -197,7 +197,7 @@
   showStep(current);
 })();
 
-/* ---------- Live prescription status & hash update ---------- */
+/* ---------- Live prescription status & payload update ---------- */
 async function updatePrescriptions() {
   try {
     const res = await fetch('/prescriptions_json');
@@ -228,9 +228,18 @@ async function updatePrescriptions() {
       const hashElem = card.querySelector('.payload-hash');
       if(hashElem) hashElem.textContent = prescription.jsonPayloadHash || 'computing…';
 
-      // Update full JSON payload
+      // Update full JSON payload nicely
       const jsonElem = card.querySelector('.json-view');
-      if(jsonElem) jsonElem.textContent = JSON.stringify(prescription.jsonPayload || {}, null, 2);
+      if(jsonElem) {
+        if(prescription.jsonPayload){
+          let payloadObj = typeof prescription.jsonPayload === 'string'
+                          ? JSON.parse(prescription.jsonPayload)
+                          : prescription.jsonPayload;
+          jsonElem.textContent = JSON.stringify(payloadObj, null, 2);
+        } else {
+          jsonElem.textContent = '{}';
+        }
+      }
     }
   } catch(err) {
     console.error('Error fetching prescriptions:', err);
