@@ -117,41 +117,33 @@ def register_prescription():
 # Receive blockchain updates
 # whenever someone sends a POST request to /webhook/blockchain-notification, run the function below
 # This function listens for blockchain updates → finds the correct prescription → updates its status and blockchain info → and confirms back to the webhook sender.
+# Receive blockchain updates
 @app.route("/webhook/prescription-notification", methods=["POST"])
-def prescription_webhook():    # the function that will run when the webhook is triggered
+def prescription_webhook():
     try:
-        # Grab the JSON data that was sent in the request.
-        webhook_data = request.get_json(silent=True)   # if the body isn’t valid JSON, don’t scream an error—just give None.
-        
-        # If no data came in (or it wasn’t JSON), we stop right away and return an error message.
-        # 400 = bad request.
+        webhook_data = request.get_json(silent=True)
         if not webhook_data:
             print("Webhook error: no JSON body")
             return jsonify({"error": "Invalid webhook"}), 400
 
-        # logs what we got, for debugging.
         print(f"Received webhook: {webhook_data}")
 
-        data_id = webhook_data.get("dataId")       
-        results = webhook_data.get("BlockchainResults", [])   # A list of blockchain transaction results, If BlockchainResults isn’t there, just give an empty list.
+        data_id = webhook_data.get("dataId")
+        results = webhook_data.get("BlockchainResults", [])
 
-        # Prepare 3 empty variables to store info if we find it later:
-        tx_id = None            # blockchain transaction ID.
-        explorer_url = None     # link to see the transaction on a blockchain explorer.
-        success_flag = None     # whether it succeeded or failed.
+        tx_id = None
+        explorer_url = None
+        success_flag = None
 
-        # If results isn’t empty, take the first item in the list and pull out:
-        # isInstance - This ensures that results is actually a Python list object.
         if results and isinstance(results, list):
             first = results[0]
             tx_id = first.get("transactionId")
             explorer_url = first.get("transactionExplorerUrl")
-            success_flag = first.get("isSuccess")      # True/False
+            success_flag = first.get("isSuccess")
 
-        # Update your in-memory prescription list
-        # Go through your list of prescriptions in memory.
+        # Update prescriptions
         for prescription in prescriptions:
-            if prescription.get("data_id") == data_id:   # If a prescription has the same data_id as the webhook dataId, then update that song.
+            if prescription.get("data_id") == data_id:
                 if success_flag is True:
                     prescription["status"] = "confirmed"
                 elif success_flag is False:
@@ -164,7 +156,13 @@ def prescription_webhook():    # the function that will run when the webhook is 
                 if explorer_url:
                     prescription["explorer_url"] = explorer_url
 
-                print(f"Updated song {data_id}: {prescription}")
+                # Add webhook-provided payload & hash
+                if "jsonPayloadHash" in webhook_data:
+                    prescription["jsonPayloadHash"] = webhook_data["jsonPayloadHash"]
+                if "jsonPayload" in webhook_data:
+                    prescription["jsonPayload"] = webhook_data["jsonPayload"]
+
+                print(f"Updated prescription {data_id}: {prescription}")
                 break
 
         return jsonify({"message": "Webhook processed successfully"}), 200
@@ -172,6 +170,12 @@ def prescription_webhook():    # the function that will run when the webhook is 
     except Exception as e:
         print(f"Webhook exception: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# JSON endpoint for frontend polling
+@app.route("/prescriptions_json")
+def prescriptions_json():
+    return jsonify(prescriptions)
 
 
 # verify transactions on the blockchain
@@ -265,11 +269,6 @@ def verify_prescription():
     # GET Request Handling
     tx_id = request.args.get("tx_id", "")   # request.args: Dictionary containing URL query parameters and Get tx_id parameter, default to empty string if not present
     return render_template("verify_prescription.html", tx_id=tx_id)       # Links from other pages can pre-fill the transaction ID
-
-@app.route("/prescriptions_json")
-def prescriptions_json():
-    return jsonify(prescriptions)
-
 
 # Application Runner.
 # Starts Flask server on Render or local machine.

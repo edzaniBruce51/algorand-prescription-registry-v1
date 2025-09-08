@@ -1,117 +1,115 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <!-- page-specific tiny styles for the wizard -->
-  <style>
-    .form-card{ background:#f8faf9; border-radius:10px; padding:18px; border:1px solid rgba(6,95,70,0.04); }
-    .step { display:none; }
-    .step.active { display:block; }
-    .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-    @media (max-width:720px){ .row{ grid-template-columns:1fr } }
-    .controls{ display:flex; gap:10px; margin-top:10px; align-items:center; }
-    .empty-state{ padding:10px; border-radius:8px; background:#fff; border:1px solid rgba(6,95,70,0.04) }
-    .prescription-url{ color: var(--accent); text-decoration:none }
-    .prescription-url:hover{ text-decoration:underline }
-    pre.json-view { font-size:.8rem; background:#f4f8f7; padding:8px; border-radius:6px; overflow:auto; max-height:200px; }
-    .badge { padding:2px 6px; border-radius:4px; background:#0f766e; color:#fff; font-size:.75rem; }
-    .btn { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; background:#0f766e; color:#fff; font-weight:600; }
-    .btn.secondary { background:#065f46; }
-    .prescription-card { background:#fff; border:1px solid rgba(6,95,70,0.08); border-radius:10px; padding:12px; margin-bottom:12px; }
-    .title { font-weight:700; margin-bottom:6px; }
-    .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; font-size:.75rem; color:#555; }
-  </style>
+<style>
+  .form-card{ background:#f8faf9; border-radius:10px; padding:18px; border:1px solid rgba(6,95,70,0.04); }
+  .step { display:none; }
+  .step.active { display:block; }
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  @media (max-width:720px){ .row{ grid-template-columns:1fr } }
+  .controls{ display:flex; gap:10px; margin-top:10px; align-items:center; }
+  .empty-state{ padding:10px; border-radius:8px; background:#fff; border:1px solid rgba(6,95,70,0.04) }
+  .prescription-url{ color: var(--accent); text-decoration:none }
+  .prescription-url:hover{ text-decoration:underline }
+  pre.json-view { font-size:.8rem; background:#f4f8f7; padding:8px; border-radius:6px; overflow:auto; max-height:200px; }
+  .badge { padding:2px 6px; border-radius:4px; background:#0f766e; color:#fff; font-size:.75rem; }
+  .btn { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; background:#0f766e; color:#fff; font-weight:600; text-decoration:none; display:inline-block; }
+  .btn.secondary { background:#065f46; }
+  .prescription-card { background:#fff; border:1px solid rgba(6,95,70,0.08); border-radius:10px; padding:12px; margin-bottom:12px; }
+  .title { font-weight:700; margin-bottom:6px; }
+  .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; font-size:.75rem; color:#555; }
+</style>
 
-  <!-- LEFT: Wizard form -->
-  <div class="card" aria-live="polite">
-    <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
-    <div class="step-title" id="stepTitle" style="font-weight:700; margin:6px 0 12px; color:#06303a">Patient Details</div>
+<div class="card" aria-live="polite">
+  <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="step-title" id="stepTitle" style="font-weight:700; margin:6px 0 12px; color:#06303a">Patient Details</div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash flash-{{ category }}" role="status" style="margin-bottom:10px;">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}" role="status" style="margin-bottom:10px;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 
-    <form id="wizardForm" action="/register_prescription" method="post" novalidate>
-      <!-- Step 1 -->
-      <div class="step active" data-step="1" id="step1">
-        <div class="row">
-          <div>
-            <label for="patient_full_name">Patient's Full Name</label>
-            <input id="patient_full_name" name="patient_full_name" type="text" placeholder="e.g., Alice Demo" required>
-          </div>
-          <div>
-            <label for="patient_dob">Patient DOB</label>
-            <input id="patient_dob" name="patient_dob" type="text" placeholder="YYYY-MM-DD" required>
-          </div>
+  <form id="wizardForm" action="/register_prescription" method="post" novalidate>
+    <!-- Step 1 -->
+    <div class="step active" data-step="1" id="step1">
+      <div class="row">
+        <div>
+          <label for="patient_full_name">Patient's Full Name</label>
+          <input id="patient_full_name" name="patient_full_name" type="text" placeholder="e.g., Alice Demo" required>
         </div>
-        <div class="row">
-          <div>
-            <label for="prescription_date">Date of Prescription</label>
-            <input id="prescription_date" name="prescription_date" type="text" placeholder="YYYY-MM-DD" required>
-          </div>
-          <div>
-            <label for="medication_name">Medication Name</label>
-            <input id="medication_name" name="medication_name" type="text" placeholder="e.g., Amoxicillin" required>
-          </div>
-        </div>
-        <div class="small">Tip: press <strong>Next</strong> to continue — fields are saved until submission.</div>
-      </div>
-
-      <!-- Step 2 -->
-      <div class="step" data-step="2" id="step2">
-        <div class="row">
-          <div>
-            <label for="dosage_strength">Dosage & Strength</label>
-            <input id="dosage_strength" name="dosage_strength" type="text" placeholder="e.g., 500 mg" required>
-          </div>
-          <div>
-            <label for="route_of_administration">Route of Administration</label>
-            <input id="route_of_administration" name="route_of_administration" type="text" placeholder="e.g., oral" required>
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label for="frequency_duration">Frequency & Duration</label>
-            <input id="frequency_duration" name="frequency_duration" type="text" placeholder="e.g., 2x/day for 7 days" required>
-          </div>
-          <div>
-            <label for="quantity_to_dispense">Quantity to Dispense</label>
-            <input id="quantity_to_dispense" name="quantity_to_dispense" type="text" placeholder="e.g., 14" required>
-          </div>
-        </div>
-        <div style="margin-bottom:8px;">
-          <label for="refill_info">Refill Information</label>
-          <input id="refill_info" name="refill_info" type="text" placeholder="e.g., 1 refill allowed">
+        <div>
+          <label for="patient_dob">Patient DOB</label>
+          <input id="patient_dob" name="patient_dob" type="text" placeholder="YYYY-MM-DD" required>
         </div>
       </div>
-
-      <!-- Step 3 -->
-      <div class="step" data-step="3" id="step3">
-        <div style="margin-bottom:12px;">
-          <label for="prescriber_signature">Prescriber's Signature & Credentials</label>
-          <input id="prescriber_signature" name="prescriber_signature" type="text" placeholder="e.g., Dr John Doe - Reg 12345" required>
+      <div class="row">
+        <div>
+          <label for="prescription_date">Date of Prescription</label>
+          <input id="prescription_date" name="prescription_date" type="text" placeholder="YYYY-MM-DD" required>
         </div>
-        <div style="margin-top:10px;">
-          <strong>Review before submitting:</strong>
-          <div class="small" style="margin-top:8px;">Use the submit button below to register the prescription — it will be sent to the BaaS provider and queued for blockchain anchoring.</div>
-          <div id="reviewSummary" style="margin-top:12px;padding:12px;border-radius:8px;background:#fff;border:1px solid rgba(6,95,70,0.03);"></div>
+        <div>
+          <label for="medication_name">Medication Name</label>
+          <input id="medication_name" name="medication_name" type="text" placeholder="e.g., Amoxicillin" required>
         </div>
       </div>
+      <div class="small">Tip: press <strong>Next</strong> to continue — fields are saved until submission.</div>
+    </div>
 
-      <!-- Controls -->
-      <div class="controls">
-        <button type="button" class="btn secondary" id="prevBtn" style="display:none">← Back</button>
-        <div style="flex:1"></div>
-        <button type="button" class="btn" id="nextBtn">Next →</button>
-        <button type="submit" class="btn" id="submitBtn" style="display:none">Submit</button>
+    <!-- Step 2 -->
+    <div class="step" data-step="2" id="step2">
+      <div class="row">
+        <div>
+          <label for="dosage_strength">Dosage & Strength</label>
+          <input id="dosage_strength" name="dosage_strength" type="text" placeholder="e.g., 500 mg" required>
+        </div>
+        <div>
+          <label for="route_of_administration">Route of Administration</label>
+          <input id="route_of_administration" name="route_of_administration" type="text" placeholder="e.g., oral" required>
+        </div>
       </div>
-    </form>
-  </div>
+      <div class="row">
+        <div>
+          <label for="frequency_duration">Frequency & Duration</label>
+          <input id="frequency_duration" name="frequency_duration" type="text" placeholder="e.g., 2x/day for 7 days" required>
+        </div>
+        <div>
+          <label for="quantity_to_dispense">Quantity to Dispense</label>
+          <input id="quantity_to_dispense" name="quantity_to_dispense" type="text" placeholder="e.g., 14" required>
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <label for="refill_info">Refill Information</label>
+        <input id="refill_info" name="refill_info" type="text" placeholder="e.g., 1 refill allowed">
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step" data-step="3" id="step3">
+      <div style="margin-bottom:12px;">
+        <label for="prescriber_signature">Prescriber's Signature & Credentials</label>
+        <input id="prescriber_signature" name="prescriber_signature" type="text" placeholder="e.g., Dr John Doe - Reg 12345" required>
+      </div>
+      <div style="margin-top:10px;">
+        <strong>Review before submitting:</strong>
+        <div class="small" style="margin-top:8px;">Use the submit button below to register the prescription — it will be sent to the BaaS provider and queued for blockchain anchoring.</div>
+        <div id="reviewSummary" style="margin-top:12px;padding:12px;border-radius:8px;background:#fff;border:1px solid rgba(6,95,70,0.03);"></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button type="button" class="btn secondary" id="prevBtn" style="display:none">← Back</button>
+      <div style="flex:1"></div>
+      <button type="button" class="btn" id="nextBtn">Next →</button>
+      <button type="submit" class="btn" id="submitBtn" style="display:none">Submit</button>
+    </div>
+  </form>
+</div>
 {% endblock %}
 
 {% block right_column %}
@@ -138,7 +136,7 @@
           {% if prescription.data_id %}<span class="small">ID: {{ prescription.data_id }}</span>{% endif %}
           {% if prescription.baas_task_id %}<span class="small">Task: {{ prescription.baas_task_id }}</span>{% endif %}
           {% if prescription.blockchain_tx_id %}
-            <a class="btn" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}">🔍 Verify</a>
+            <a class="btn verify" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}" target="_blank">🔍 Verify</a>
           {% endif %}
         </div>
 
@@ -147,9 +145,7 @@
           <code class="payload-hash">{{ prescription.jsonPayloadHash or 'computing…' }}</code>
         </div>
 
-        <pre class="json-view payload-json">
-{{ prescription | tojson(indent=2) }}
-        </pre>
+        <pre class="json-view payload-json">{{ prescription.jsonPayload or {} | tojson(indent=2) }}</pre>
       </div>
     {% endfor %}
   {% else %}
@@ -228,22 +224,13 @@ async function updatePrescriptions() {
         verifyBtn.href = `/verify_prescription?tx_id=${prescription.blockchain_tx_id}`;
       }
 
-      // Compute payload hash if not present
+      // Update payload hash
       const hashElem = card.querySelector('.payload-hash');
-      if(hashElem){
-        if(!prescription.jsonPayloadHash && prescription.jsonPayload){
-          const msgUint8 = new TextEncoder().encode(JSON.stringify(prescription.jsonPayload));
-          const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          const hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
-          prescription.jsonPayloadHash = hashHex;
-        }
-        hashElem.textContent = prescription.jsonPayloadHash || 'computing…';
-      }
+      if(hashElem) hashElem.textContent = prescription.jsonPayloadHash || 'computing…';
 
-      // Update full JSON
+      // Update full JSON payload
       const jsonElem = card.querySelector('.json-view');
-      if(jsonElem) jsonElem.textContent = JSON.stringify(prescription, null, 2);
+      if(jsonElem) jsonElem.textContent = JSON.stringify(prescription.jsonPayload || {}, null, 2);
     }
   } catch(err) {
     console.error('Error fetching prescriptions:', err);
