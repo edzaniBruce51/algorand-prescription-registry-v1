@@ -12,12 +12,17 @@
     .empty-state{ padding:10px; border-radius:8px; background:#fff; border:1px solid rgba(6,95,70,0.04) }
     .prescription-url{ color: var(--accent); text-decoration:none }
     .prescription-url:hover{ text-decoration:underline }
-    pre.json-view { font-size:.8rem; background:#f4f8f7; padding:8px; border-radius:6px; overflow:auto; }
+    pre.json-view { font-size:.8rem; background:#f4f8f7; padding:8px; border-radius:6px; overflow:auto; max-height:200px; }
+    .badge { padding:2px 6px; border-radius:4px; background:#0f766e; color:#fff; font-size:.75rem; }
+    .btn { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; background:#0f766e; color:#fff; font-weight:600; }
+    .btn.secondary { background:#065f46; }
+    .prescription-card { background:#fff; border:1px solid rgba(6,95,70,0.08); border-radius:10px; padding:12px; margin-bottom:12px; }
+    .title { font-weight:700; margin-bottom:6px; }
+    .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; font-size:.75rem; color:#555; }
   </style>
 
   <!-- LEFT: Wizard form -->
   <div class="card" aria-live="polite">
-    <!-- Progress -->
     <div class="progress" aria-hidden="true"><div class="progress-bar" id="progressBar"></div></div>
     <div class="step-title" id="stepTitle" style="font-weight:700; margin:6px 0 12px; color:#06303a">Patient Details</div>
 
@@ -31,7 +36,6 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Multi-step form -->
     <form id="wizardForm" action="/register_prescription" method="post" novalidate>
       <!-- Step 1 -->
       <div class="step active" data-step="1" id="step1">
@@ -116,7 +120,7 @@
 
   {% if prescriptions %}
     {% for prescription in prescriptions|reverse %}
-      <div class="prescription-card" role="article" aria-label="Prescription {{ prescription.data_id }}">
+      <div class="prescription-card" role="article" aria-label="Prescription {{ prescription.data_id }}" data-id="{{ prescription.data_id }}">
         <div class="title">{{ prescription.patient_full_name }}</div>
 
         <p class="small"><strong>DOB:</strong> {{ prescription.patient_dob or '-' }}</p>
@@ -130,42 +134,22 @@
         <p class="small"><strong>Prescriber:</strong> {{ prescription.prescriber_signature or '-' }}</p>
 
         <div class="meta">
-          {% if prescription.status %}
-            <span class="badge {{ prescription.status }}">{{ prescription.status|capitalize }}</span>
-          {% endif %}
+          {% if prescription.status %}<span class="badge">{{ prescription.status|capitalize }}</span>{% endif %}
           {% if prescription.data_id %}<span class="small">ID: {{ prescription.data_id }}</span>{% endif %}
           {% if prescription.baas_task_id %}<span class="small">Task: {{ prescription.baas_task_id }}</span>{% endif %}
           {% if prescription.blockchain_tx_id %}
-            <span class="small">
-              <strong>Blockchain Tx:</strong>
-              <a class="prescription-url" target="_blank"
-                 href="https://testnet.explorer.perawallet.app/tx/{{ prescription.blockchain_tx_id }}">{{ prescription.blockchain_tx_id }}</a>
-              <a class="nav-btn" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}">🔍 Verify</a>
-            </span>
+            <a class="btn" href="/verify_prescription?tx_id={{ prescription.blockchain_tx_id }}">🔍 Verify</a>
           {% endif %}
         </div>
 
         <div class="small mt-8">
           <strong>Payload Hash (SHA-256):</strong>
-          <code class="payload-hash">computing…</code>
+          <code class="payload-hash">{{ prescription.jsonPayloadHash or 'computing…' }}</code>
         </div>
 
-        <script type="application/json" class="payload-json">
-          {{ {
-            "application": "prescriptionRegistry",
-            "version": 1,
-            "patient_full_name": prescription.patient_full_name,
-            "patient_dob": prescription.patient_dob,
-            "prescription_date": prescription.prescription_date,
-            "medication_name": prescription.medication_name,
-            "dosage_strength": prescription.dosage_strength,
-            "route_of_administration": prescription.route_of_administration,
-            "frequency_duration": prescription.frequency_duration,
-            "quantity_to_dispense": prescription.quantity_to_dispense,
-            "refill_info": prescription.refill_info,
-            "prescriber_signature": prescription.prescriber_signature
-          } | tojson }}
-        </script>
+        <pre class="json-view payload-json">
+{{ prescription | tojson(indent=2) }}
+        </pre>
       </div>
     {% endfor %}
   {% else %}
@@ -179,8 +163,8 @@
 
 {% block extra_scripts %}
 <script>
-(async function(){
-  /* ---------- Wizard logic ---------- */
+/* ---------- Wizard logic ---------- */
+(function(){
   const steps = Array.from(document.querySelectorAll('.step'));
   const progressBar = document.getElementById('progressBar');
   const stepTitle = document.getElementById('stepTitle');
@@ -189,6 +173,7 @@
   const submitBtn = document.getElementById('submitBtn');
   const form = document.getElementById('wizardForm');
   const reviewSummary = document.getElementById('reviewSummary');
+
   let current = 0;
   const titles = ['Patient Details','Prescription Details','Prescriber & Review'];
 
@@ -197,75 +182,56 @@
     stepTitle.textContent = titles[index] || '';
     const pct = Math.round((index/(steps.length-1))*100);
     progressBar.style.width = pct + '%';
-    prevBtn.style.display = index===0?'none':'inline-block';
-    nextBtn.style.display = index===steps.length-1?'none':'inline-block';
-    submitBtn.style.display = index===steps.length-1?'inline-block':'none';
-    if(index===steps.length-1) populateReview();
+    prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
+    nextBtn.style.display = index === steps.length-1 ? 'none' : 'inline-block';
+    submitBtn.style.display = index === steps.length-1 ? 'inline-block' : 'none';
+    if(index === steps.length-1) populateReview();
   }
 
   function populateReview(){
     const data = {};
     form.querySelectorAll('input').forEach(input=>{
-      data[input.name]=input.value;
+      data[input.name] = input.value;
     });
     reviewSummary.textContent = JSON.stringify(data, null, 2);
   }
 
-  nextBtn.addEventListener('click', ()=>{ current=Math.min(current+1,steps.length-1); showStep(current); });
-  prevBtn.addEventListener('click', ()=>{ current=Math.max(current-1,0); showStep(current); });
+  nextBtn.addEventListener('click', ()=>{ current++; showStep(current); });
+  prevBtn.addEventListener('click', ()=>{ current--; showStep(current); });
   showStep(current);
+})();
 
-  /* ---------- SHA-256 Hash Computation ---------- */
-  async function computeHash(text){
-    const encoder = new TextEncoder();
-    const data = encoder.encode(text);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
-  }
+/* ---------- Live prescription status update ---------- */
+async function updatePrescriptions() {
+  try {
+    const res = await fetch('/prescriptions_json');
+    const data = await res.json();
 
-  async function updatePrescriptionHashes(){
-    document.querySelectorAll('.prescription-card').forEach(async card=>{
-      const jsonEl = card.querySelector('.payload-json');
-      const hashEl = card.querySelector('.payload-hash');
-      if(jsonEl && hashEl){
-        const jsonText = jsonEl.textContent.trim();
-        hashEl.textContent = await computeHash(jsonText);
+    data.forEach(prescription => {
+      const card = document.querySelector(`.prescription-card[data-id="${prescription.data_id}"]`);
+      if (card) {
+        const badge = card.querySelector('.badge');
+        if(badge) badge.textContent = prescription.status || 'pending';
+
+        const txLink = card.querySelector('.prescription-url');
+        if(txLink && prescription.blockchain_tx_id) {
+          txLink.href = `https://testnet.explorer.perawallet.app/tx/${prescription.blockchain_tx_id}`;
+          txLink.textContent = prescription.blockchain_tx_id;
+        }
+
+        const hashElem = card.querySelector('.payload-hash');
+        if(hashElem && prescription.jsonPayloadHash) hashElem.textContent = prescription.jsonPayloadHash;
+
+        const jsonElem = card.querySelector('.json-view');
+        if(jsonElem) jsonElem.textContent = JSON.stringify(prescription, null, 2);
       }
     });
+  } catch(err) {
+    console.error('Error fetching prescriptions:', err);
   }
+}
 
-  await updatePrescriptionHashes();
-
-  /* ---------- Polling for status & hash updates ---------- */
-  async function pollPrescriptions(){
-    const cards = document.querySelectorAll('.prescription-card');
-    for(const card of cards){
-      const taskId = card.querySelector('.meta .small')?.textContent.match(/Task: (\S+)/)?.[1];
-      if(taskId){
-        try{
-          const res = await fetch(`/api/prescription_status?task_id=${taskId}`);
-          if(res.ok){
-            const data = await res.json();
-            // update status badge
-            const badge = card.querySelector('.badge');
-            if(badge) badge.textContent = data.status;
-            // update blockchain tx link if present
-            if(data.blockchain_tx_id){
-              const link = card.querySelector('.prescription-url');
-              if(link){
-                link.textContent = data.blockchain_tx_id;
-                link.href = `https://testnet.explorer.perawallet.app/tx/${data.blockchain_tx_id}`;
-              }
-            }
-          }
-        }catch(e){ console.error(e); }
-      }
-    }
-    await updatePrescriptionHashes();
-    setTimeout(pollPrescriptions, 10000); // repeat every 10s
-  }
-  pollPrescriptions();
-})();
+setInterval(updatePrescriptions, 5000);
+updatePrescriptions();
 </script>
 {% endblock %}
