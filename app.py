@@ -24,6 +24,10 @@ prescriptions = []
 @app.route("/")
 def index():
     """View all registered prescriptions"""
+     # Sort prescriptions by most recent (descending by data_id timestamp)
+    sorted_prescriptions = sorted(
+        prescriptions, key=lambda x: x.get("data_id", ""), reverse=True
+    )
     return render_template("index.html", prescriptions=prescriptions) # passes the current prescription list to display all registered songs.
 
 
@@ -264,7 +268,20 @@ def verify_prescription():
     # GET Request Handling
     tx_id = request.args.get("tx_id", "")   # request.args: Dictionary containing URL query parameters and Get tx_id parameter, default to empty string if not present
     return render_template("verify_prescription.html", tx_id=tx_id)       # Links from other pages can pre-fill the transaction ID
- 
+
+from flask import Response
+import time
+
+@app.route("/stream")
+def stream():
+    def event_stream():
+        last_len = 0
+        while True:
+            if len(prescriptions) != last_len:
+                last_len = len(prescriptions)
+                yield f"data: {json.dumps(prescriptions)}\n\n"
+            time.sleep(2)
+    return Response(event_stream(), mimetype="text/event-stream") 
 
 # Application Runner.
 # Starts Flask server on Render or local machine.
