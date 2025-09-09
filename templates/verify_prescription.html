@@ -1,88 +1,198 @@
 {% extends "base.html" %}
+{% block title %}Verify Prescription — Prescription Registry{% endblock %}
+
 {% block content %}
-<style>
-  .status-success {
-    color: #065f46;
-    background: #d1fae5;
-    font-weight: bold;
-    padding: 8px;
-    border-radius: 6px;
-  }
-  .status-error {
-    color: #991b1b;
-    background: #fee2e2;
-    font-weight: bold;
-    padding: 8px;
-    border-radius: 6px;
-  }
-  .radio-inline {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    margin-top: 5px;
-  }
-  .radio-inline label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-  }
-  .disabled {
-    opacity: 0.5;
-    pointer-events: none;
-  }
-</style>
+  <section>
+    <div class="card">
+      <!-- Flash -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-<div class="form-card">
-  <h2>Verify Prescription</h2>
-
-  <!-- 🔹 Verification Result (replaces old message above Transaction ID) -->
-  {% if mode == "post" %}
-    {% if result and result.isJsonPayloadHashVerified %}
-      {% if tx_type == "hash" %}
-        <p class="status-success">✅ Prescription verification successful. Provided data hash (fingerprint) matches on-chain hash.</p>
-      {% else %}
-        <p class="status-success">✅ Prescription verification successful. Provided data payload matches original data payload.</p>
+      <!-- Enhanced Success/Error Message Display for POST results -->
+      {% if mode == "post" and verification_message %}
+        <div class="verification-result-banner verification-{{ verification_status }}">
+          {{ verification_message }}
+        </div>
       {% endif %}
-    {% elif result %}
-      {% if tx_type == "hash" %}
-        <p class="status-error">❌ Prescription verification unsuccessful. Provided data hash (fingerprint) does not match on-chain hash.</p>
-      {% else %}
-        <p class="status-error">❌ Prescription verification unsuccessful. Provided data payload does not match original data payload.</p>
+
+      <form action="/verify_prescription" method="post" class="mt-8" id="verificationForm">
+        <div style="margin-bottom:15px">
+          <label for="transactionId">Transaction ID (Required)</label>
+          <input id="transactionId" name="transactionId" type="text" value="{{ tx_id or '' }}" required>
+        </div>
+
+        <!-- Verification Method Selection -->
+        <div style="margin-bottom:20px; padding:15px; background:#f8f9fa; border-radius:8px;">
+          <label style="font-weight:bold; margin-bottom:10px; display:block;">Choose Verification Method:</label>
+          
+          <div style="margin-bottom:10px;">
+            <label style="display:flex; align-items:center; font-weight:normal; cursor:pointer;">
+              <input type="radio" name="verification_type" value="payload" id="payloadRadio" style="margin-right:8px;" {% if verification_type == "payload" %}checked{% endif %}>
+              Verify using JSON Payload (compare actual data)
+            </label>
+          </div>
+          
+          <div>
+            <label style="display:flex; align-items:center; font-weight:normal; cursor:pointer;">
+              <input type="radio" name="verification_type" value="hash" id="hashRadio" style="margin-right:8px;" {% if verification_type == "hash" %}checked{% endif %}>
+              Verify using Hash (compare data fingerprint)
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-bottom:15px" id="payloadSection">
+          <label for="jsonPayload">JSON Payload</label>
+          <textarea id="jsonPayload" name="jsonPayload" placeholder='{"application":"prescriptionRegistry", "patient_full_name":"Alice Demo", ...}' rows="6"></textarea>
+          <small style="color:#6c757d; display:block; margin-top:5px;">
+            Paste the complete JSON data to verify it matches what's stored on the blockchain
+          </small>
+        </div>
+
+        <div style="margin-bottom:15px" id="hashSection">
+          <label for="jsonPayloadHash">JSON Payload Hash - Base64</label>
+          <input id="jsonPayloadHash" name="jsonPayloadHash" type="text" placeholder="Base64 SHA-256 hash">
+          <small style="color:#6c757d; display:block; margin-top:5px;">
+            Enter the Base64 SHA-256 hash to verify the data fingerprint
+          </small>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center;">
+          <a href="/" class="btn">← Back</a>
+          <button type="submit" class="btn">Verify Prescription</button>
+        </div>
+      </form>
+
+      {% if result %}
+        <div class="list-card mt-8" style="margin-top:20px;">
+          <h3>Verification Result</h3>
+          <pre style="background:#f7fdfc;padding:15px;border-radius:8px;overflow:auto; border:1px solid #e9ecef;">{{ result | tojson(indent=2) }}</pre>
+        </div>
       {% endif %}
-    {% endif %}
-  {% endif %}
-
-  <form method="POST" action="{{ url_for('verify_prescription') }}">
-    <label>Transaction ID</label>
-    <input type="text" name="transactionId" value="{{ tx_id or '' }}" required>
-
-    <div class="radio-inline">
-      <label>
-        <input type="radio" name="tx_type" value="payload" onclick="toggleInputs('payload')" checked>
-        Payload
-      </label>
-      <label>
-        <input type="radio" name="tx_type" value="hash" onclick="toggleInputs('hash')">
-        Hash
-      </label>
     </div>
+  </section>
 
-    <label>JSON Payload</label>
-    <textarea name="jsonPayload" id="payloadInput"></textarea>
+  <style>
+    .verification-result-banner {
+      padding: 15px;
+      margin: 10px 0 20px 0;
+      border-radius: 8px;
+      font-weight: 600;
+      text-align: center;
+      border: 2px solid;
+    }
+    
+    .verification-success {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #28a745;
+    }
+    
+    .verification-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #dc3545;
+    }
+    
+    .form-section-disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    
+    input[type="radio"] {
+      transform: scale(1.2);
+    }
+    
+    textarea, input[type="text"] {
+      transition: all 0.2s ease;
+    }
+    
+    .disabled-input {
+      background-color: #f8f9fa !important;
+      color: #6c757d !important;
+      cursor: not-allowed !important;
+    }
+  </style>
 
-    <label>JSON Payload Hash</label>
-    <input type="text" name="jsonPayloadHash" id="hashInput">
-
-    <button type="submit">Verify</button>
-  </form>
-</div>
-
-<script>
-function toggleInputs(selected) {
-  document.getElementById("payloadInput").disabled = (selected === "hash");
-  document.getElementById("hashInput").disabled = (selected === "payload");
-}
-toggleInputs("payload"); // default
-</script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const payloadRadio = document.getElementById('payloadRadio');
+      const hashRadio = document.getElementById('hashRadio');
+      const payloadSection = document.getElementById('payloadSection');
+      const hashSection = document.getElementById('hashSection');
+      const jsonPayload = document.getElementById('jsonPayload');
+      const jsonPayloadHash = document.getElementById('jsonPayloadHash');
+      
+      function updateFormState() {
+        if (payloadRadio.checked) {
+          // Enable payload section, disable hash section
+          payloadSection.classList.remove('form-section-disabled');
+          hashSection.classList.add('form-section-disabled');
+          
+          jsonPayload.disabled = false;
+          jsonPayload.classList.remove('disabled-input');
+          
+          jsonPayloadHash.disabled = true;
+          jsonPayloadHash.classList.add('disabled-input');
+          jsonPayloadHash.value = '';  // Clear hash when switching to payload
+          
+        } else if (hashRadio.checked) {
+          // Enable hash section, disable payload section
+          hashSection.classList.remove('form-section-disabled');
+          payloadSection.classList.add('form-section-disabled');
+          
+          jsonPayloadHash.disabled = false;
+          jsonPayloadHash.classList.remove('disabled-input');
+          
+          jsonPayload.disabled = true;
+          jsonPayload.classList.add('disabled-input');
+          jsonPayload.value = '';  // Clear payload when switching to hash
+        }
+      }
+      
+      // Set initial state
+      if (!payloadRadio.checked && !hashRadio.checked) {
+        // Default to payload if nothing is selected
+        payloadRadio.checked = true;
+      }
+      updateFormState();
+      
+      // Add event listeners
+      payloadRadio.addEventListener('change', updateFormState);
+      hashRadio.addEventListener('change', updateFormState);
+      
+      // Form validation
+      document.getElementById('verificationForm').addEventListener('submit', function(e) {
+        const verificationType = document.querySelector('input[name="verification_type"]:checked');
+        
+        if (!verificationType) {
+          e.preventDefault();
+          alert('Please select a verification method.');
+          return false;
+        }
+        
+        if (verificationType.value === 'payload' && !jsonPayload.value.trim()) {
+          e.preventDefault();
+          alert('Please provide the JSON payload for verification.');
+          return false;
+        }
+        
+        if (verificationType.value === 'hash' && !jsonPayloadHash.value.trim()) {
+          e.preventDefault();
+          alert('Please provide the hash for verification.');
+          return false;
+        }
+        
+        return true;
+      });
+    });
+  </script>
 {% endblock %}
+
+{% block right_column %}{% endblock %}
+
+{% block extra_scripts %}{% endblock %}

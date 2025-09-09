@@ -179,16 +179,24 @@ def prescriptions_json():
 
 
 # verify transactions on the blockchain
+# Updated verify_prescription route for app.py
 @app.route("/verify_prescription", methods=["GET", "POST"])
 def verify_prescription():
     if request.method == "POST":
         transaction_id = request.form.get("transactionId")
+        verification_type = request.form.get("verification_type")  # Get the verification method
         json_payload_str = request.form.get("jsonPayload")
         json_payload_hash = request.form.get("jsonPayloadHash")
-        tx_type = request.form.get("tx_type")  # <-- payload or hash
+        
+        verification_message = None
+        verification_status = None
         
         if not transaction_id:
             flash("Transaction ID is required", "error")
+            return redirect(url_for("verify_prescription"))
+        
+        if not verification_type:
+            flash("Please select a verification method", "error")
             return redirect(url_for("verify_prescription"))
         
         try:
@@ -198,17 +206,52 @@ def verify_prescription():
             }
             verification_payload = {"transactionId": transaction_id}
 
-            if json_payload_str and json_payload_str.strip():
+            # Handle payload verification
+            if verification_type == "payload":
+                if not json_payload_str or not json_payload_str.strip():
+                    verification_message = "JSON payload is required for payload verification"
+                    verification_status = "error"
+                    return render_template(
+                        "verify_prescription.html",
+                        tx_id=transaction_id,
+                        verification_type=verification_type,
+                        verification_message=verification_message,
+                        verification_status=verification_status,
+                        mode="post"
+                    )
+                
                 try:
                     json_payload_obj = json.loads(json_payload_str)
                     verification_payload["jsonPayload"] = json_payload_obj
                 except json.JSONDecodeError as e:
-                    flash(f"Invalid JSON payload: {e}", "error")
-                    return redirect(url_for("verify_prescription"))
+                    verification_message = f"Invalid JSON payload: {e}"
+                    verification_status = "error"
+                    return render_template(
+                        "verify_prescription.html",
+                        tx_id=transaction_id,
+                        verification_type=verification_type,
+                        verification_message=verification_message,
+                        verification_status=verification_status,
+                        mode="post"
+                    )
 
-            if json_payload_hash and json_payload_hash.strip():
+            # Handle hash verification
+            elif verification_type == "hash":
+                if not json_payload_hash or not json_payload_hash.strip():
+                    verification_message = "JSON payload hash is required for hash verification"
+                    verification_status = "error"
+                    return render_template(
+                        "verify_prescription.html",
+                        tx_id=transaction_id,
+                        verification_type=verification_type,
+                        verification_message=verification_message,
+                        verification_status=verification_status,
+                        mode="post"
+                    )
+                
                 verification_payload["jsonPayloadHash"] = json_payload_hash
 
+            # Make API call
             response = requests.post(
                 f"{BLOCKAPI_BASE_URL}/blockchainTransaction/verify",
                 json=verification_payload,
@@ -219,31 +262,70 @@ def verify_prescription():
             if response.status_code == 200:
                 try:
                     result = response.json()
+                    
+                    # Determine verification result for banner
+                    if result.get("isValid") or result.get("verified"):
+                        verification_message = "✅ Prescription verification successful! The data matches the blockchain record."
+                        verification_status = "success"
+                    else:
+                        verification_message = "❌ Verification failed. The data does not match the blockchain record."
+                        verification_status = "error"
+                    
                     return render_template(
                         "verify_prescription.html",
                         tx_id=transaction_id,
                         result=result,
-                        tx_type=tx_type,
+                        verification_type=verification_type,
+                        verification_message=verification_message,
+                        verification_status=verification_status,
                         mode="post"
                     )
+                    
                 except json.JSONDecodeError:
+                    verification_message = "Received invalid response from blockchain API"
+                    verification_status = "error"
                     return render_template(
                         "verify_prescription.html",
                         tx_id=transaction_id,
                         result={"raw_response": response.text},
-                        tx_type=tx_type,
+                        verification_type=verification_type,
+                        verification_message=verification_message,
+                        verification_status=verification_status,
                         mode="post"
                     )
             else:
-                flash(f"Verification failed: {response.text}", "error")
+                verification_message = f"Verification failed: {response.text}"
+                verification_status = "error"
+                return render_template(
+                    "verify_prescription.html",
+                    tx_id=transaction_id,
+                    verification_type=verification_type,
+                    verification_message=verification_message,
+                    verification_status=verification_status,
+                    mode="post"
+                )
 
         except Exception as e:
-            flash(f"Error: {e}", "error")
+            verification_message = f"Error during verification: {str(e)}"
+            verification_status = "error"
+            return render_template(
+                "verify_prescription.html",
+                tx_id=transaction_id,
+                verification_type=verification_type,
+                verification_message=verification_message,
+                verification_status=verification_status,
+                mode="post"
+            )
 
-        return redirect(url_for("verify_prescription"))
-
+    # GET request - show the form
     tx_id = request.args.get("tx_id", "")
-    return render_template("verify_prescription.html", tx_id=tx_id, mode="get")
+    verification_type = request.args.get("verification_type", "payload")  # Default to payload
+    return render_template(
+        "verify_prescription.html", 
+        tx_id=tx_id, 
+        verification_type=verification_type,
+        mode="get"
+    )
 
 
 # Application Runner.
