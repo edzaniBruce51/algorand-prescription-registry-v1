@@ -1,94 +1,88 @@
 {% extends "base.html" %}
-{% block title %}Verify Prescription — Prescription Registry{% endblock %}
-
 {% block content %}
-  <section>
-    <div class="card">
-      <!-- Flash -->
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="flash flash-{{ category }}">{{ message }}</div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
-
-      <form action="/verify_prescription" method="post" class="mt-8">
-        <div style="margin-bottom:10px">
-          <label for="transactionId">Transaction ID (Required)</label>
-          <input id="transactionId" name="transactionId" type="text" value="{{ tx_id or '' }}" required>
-        </div>
-
-        <!-- Verification Mode -->
-        <div style="margin-bottom:14px">
-          <label><input type="radio" name="verifyMode" value="payload" checked> Verify using JSON Payload</label>
-          <label style="margin-left:15px;"><input type="radio" name="verifyMode" value="hash"> Verify using Hash</label>
-        </div>
-
-        <!-- JSON Payload -->
-        <div style="margin-bottom:10px">
-          <label for="jsonPayload">JSON Payload</label>
-          <textarea id="jsonPayload" name="jsonPayload" placeholder='{"application":"prescriptionRegistry", "patient_full_name":"Alice Demo", ...}'></textarea>
-        </div>
-
-        <!-- JSON Payload Hash -->
-        <div style="margin-bottom:10px">
-          <label for="jsonPayloadHash">JSON Payload Hash - Base64</label>
-          <input id="jsonPayloadHash" name="jsonPayloadHash" type="text" placeholder="Base64 SHA-256 hash" disabled>
-        </div>
-
-        <div style="display:flex; gap:10px; align-items:center">
-          <a href="/" class="btn">← Back</a>
-          <button type="submit" class="btn">Verify Prescription</button>
-        </div>
-      </form>
-
-      {% if result %}
-        <div class="flash {% if result.data.isJsonPayloadHashVerified %}flash-success{% else %}flash-error{% endif %}" style="margin-top:14px;">
-          {% if mode == 'hash' %}
-            {% if result.data.isJsonPayloadHashVerified %}
-              Prescription verification successful. Provided data hash (fingerprint) matches on-chain hash.
-            {% else %}
-              Prescription verification unsuccessful. Provided data hash (fingerprint) does not match on-chain hash.
-            {% endif %}
-          {% else %}
-            {% if result.data.isJsonPayloadHashVerified %}
-              Prescription verification successful. Provided data payload matches original data payload.
-            {% else %}
-              Prescription verification unsuccessful. Provided data payload does not match original data payload.
-            {% endif %}
-          {% endif %}
-        </div>
-
-        <div class="list-card mt-8">
-          <h3>Verification Result</h3>
-          <pre style="background:#f7fdfc;padding:12px;border-radius:8px;overflow:auto">{{ result | tojson(indent=2) }}</pre>
-        </div>
-      {% endif %}
-    </div>
-  </section>
-{% endblock %}
-
-{% block right_column %}{% endblock %}
-
-{% block extra_scripts %}
-<script>
-  const modeRadios = document.querySelectorAll("input[name='verifyMode']");
-  const payloadInput = document.getElementById("jsonPayload");
-  const hashInput = document.getElementById("jsonPayloadHash");
-
-  function toggleInputs() {
-    const selected = document.querySelector("input[name='verifyMode']:checked").value;
-    if (selected === "hash") {
-      hashInput.disabled = false;
-      payloadInput.disabled = true;
-    } else {
-      hashInput.disabled = true;
-      payloadInput.disabled = false;
-    }
+<style>
+  .status-success {
+    color: #065f46;
+    background: #d1fae5;
+    font-weight: bold;
+    padding: 8px;
+    border-radius: 6px;
   }
+  .status-error {
+    color: #991b1b;
+    background: #fee2e2;
+    font-weight: bold;
+    padding: 8px;
+    border-radius: 6px;
+  }
+  .radio-inline {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-top: 5px;
+  }
+  .radio-inline label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+</style>
 
-  modeRadios.forEach(radio => radio.addEventListener("change", toggleInputs));
-  toggleInputs(); // run once on load
+<div class="form-card">
+  <h2>Verify Prescription</h2>
+
+  <!-- 🔹 Verification Result (replaces old message above Transaction ID) -->
+  {% if mode == "post" %}
+    {% if result and result.isJsonPayloadHashVerified %}
+      {% if tx_type == "hash" %}
+        <p class="status-success">✅ Prescription verification successful. Provided data hash (fingerprint) matches on-chain hash.</p>
+      {% else %}
+        <p class="status-success">✅ Prescription verification successful. Provided data payload matches original data payload.</p>
+      {% endif %}
+    {% elif result %}
+      {% if tx_type == "hash" %}
+        <p class="status-error">❌ Prescription verification unsuccessful. Provided data hash (fingerprint) does not match on-chain hash.</p>
+      {% else %}
+        <p class="status-error">❌ Prescription verification unsuccessful. Provided data payload does not match original data payload.</p>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('verify_prescription') }}">
+    <label>Transaction ID</label>
+    <input type="text" name="transactionId" value="{{ tx_id or '' }}" required>
+
+    <div class="radio-inline">
+      <label>
+        <input type="radio" name="tx_type" value="payload" onclick="toggleInputs('payload')" checked>
+        Payload
+      </label>
+      <label>
+        <input type="radio" name="tx_type" value="hash" onclick="toggleInputs('hash')">
+        Hash
+      </label>
+    </div>
+
+    <label>JSON Payload</label>
+    <textarea name="jsonPayload" id="payloadInput"></textarea>
+
+    <label>JSON Payload Hash</label>
+    <input type="text" name="jsonPayloadHash" id="hashInput">
+
+    <button type="submit">Verify</button>
+  </form>
+</div>
+
+<script>
+function toggleInputs(selected) {
+  document.getElementById("payloadInput").disabled = (selected === "hash");
+  document.getElementById("hashInput").disabled = (selected === "payload");
+}
+toggleInputs("payload"); // default
 </script>
 {% endblock %}

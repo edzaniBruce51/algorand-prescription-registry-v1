@@ -185,11 +185,12 @@ def verify_prescription():
         transaction_id = request.form.get("transactionId")
         json_payload_str = request.form.get("jsonPayload")
         json_payload_hash = request.form.get("jsonPayloadHash")
-
+        tx_type = request.form.get("tx_type")  # <-- payload or hash
+        
         if not transaction_id:
             flash("Transaction ID is required", "error")
             return redirect(url_for("verify_prescription"))
-
+        
         try:
             headers = {
                 "X-API-Key": BLOCKAPI_API_KEY,
@@ -202,7 +203,7 @@ def verify_prescription():
                     json_payload_obj = json.loads(json_payload_str)
                     verification_payload["jsonPayload"] = json_payload_obj
                 except json.JSONDecodeError as e:
-                    flash(f"Invalid JSON payload format: {str(e)}", "error")
+                    flash(f"Invalid JSON payload: {e}", "error")
                     return redirect(url_for("verify_prescription"))
 
             if json_payload_hash and json_payload_hash.strip():
@@ -218,35 +219,32 @@ def verify_prescription():
             if response.status_code == 200:
                 try:
                     result = response.json()
-                    flash("Prescription verification completed!", "success")
                     return render_template(
                         "verify_prescription.html",
                         tx_id=transaction_id,
                         result=result,
-                        mode="POST"   # ✅ pass mode for POST
+                        tx_type=tx_type,
+                        mode="post"
                     )
                 except json.JSONDecodeError:
-                    flash(f"Verification response: {response.text}", "success")
                     return render_template(
                         "verify_prescription.html",
                         tx_id=transaction_id,
                         result={"raw_response": response.text},
-                        mode="POST"   # ✅ pass mode for POST
+                        tx_type=tx_type,
+                        mode="post"
                     )
             else:
-                error_msg = f"Verification failed. Status: {response.status_code} - {response.text}"
-                flash(error_msg, "error")
+                flash(f"Verification failed: {response.text}", "error")
 
-        except requests.RequestException as e:
-            flash(f"Network error during verification: {str(e)}", "error")
         except Exception as e:
-            flash(f"Unexpected error during verification: {str(e)}", "error")
+            flash(f"Error: {e}", "error")
 
         return redirect(url_for("verify_prescription"))
 
-    # Handle GET
     tx_id = request.args.get("tx_id", "")
-    return render_template("verify_prescription.html", tx_id=tx_id, mode="GET")  # ✅ pass mode for GET
+    return render_template("verify_prescription.html", tx_id=tx_id, mode="get")
+
 
 # Application Runner.
 # Starts Flask server on Render or local machine.
