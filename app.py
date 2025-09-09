@@ -180,6 +180,7 @@ def prescriptions_json():
 
 # verify transactions on the blockchain
 # Updated verify_prescription route for app.py
+# Updated verify_prescription route for app.py
 @app.route("/verify_prescription", methods=["GET", "POST"])
 def verify_prescription():
     if request.method == "POST":
@@ -264,9 +265,29 @@ def verify_prescription():
                     result = response.json()
                     
                     # Determine verification result for banner
-                    if result.get("isValid") or result.get("verified"):
-                        verification_message = "✅ Prescription verification successful! The data matches the blockchain record."
+                    # Check the actual fields returned by the API
+                    is_hash_verified = result.get("data", {}).get("isJsonPayloadHashVerified", False)
+                    is_tx_on_blockchain = result.get("data", {}).get("isTransactionIdOnBlockchain", False)
+                    
+                    # Also check direct fields in case API structure is different
+                    if not is_hash_verified:
+                        is_hash_verified = result.get("isJsonPayloadHashVerified", False)
+                    if not is_tx_on_blockchain:
+                        is_tx_on_blockchain = result.get("isTransactionIdOnBlockchain", False)
+                    
+                    if verification_type == "hash" and is_hash_verified and is_tx_on_blockchain:
+                        verification_message = "✅ Hash verification successful! The data fingerprint matches the blockchain record."
                         verification_status = "success"
+                    elif verification_type == "payload" and is_tx_on_blockchain:
+                        # For payload verification, check if payload verification passed
+                        is_payload_verified = result.get("data", {}).get("isJsonPayloadVerified", 
+                                            result.get("isJsonPayloadVerified", False))
+                        if is_payload_verified or is_hash_verified:  # Either payload or hash verified
+                            verification_message = "✅ Payload verification successful! The data matches the blockchain record."
+                            verification_status = "success"
+                        else:
+                            verification_message = "❌ Payload verification failed. The data does not match the blockchain record."
+                            verification_status = "error"
                     else:
                         verification_message = "❌ Verification failed. The data does not match the blockchain record."
                         verification_status = "error"

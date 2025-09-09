@@ -27,21 +27,25 @@
         </div>
 
         <!-- Verification Method Selection -->
-        <div style="margin-bottom:20px; padding:15px; background:#f8f9fa; border-radius:8px;">
-          <label style="font-weight:bold; margin-bottom:10px; display:block;">Choose Verification Method:</label>
+        <div style="margin-bottom:20px; padding:15px; background:#f8f9fa; border-radius:8px; border: 1px solid #dee2e6;">
+          <label style="font-weight:bold; margin-bottom:15px; display:block; color:#495057;">Choose Verification Method:</label>
           
-          <div style="margin-bottom:10px;">
-            <label style="display:flex; align-items:center; font-weight:normal; cursor:pointer;">
-              <input type="radio" name="verification_type" value="payload" id="payloadRadio" style="margin-right:8px;" {% if verification_type == "payload" %}checked{% endif %}>
-              Verify using JSON Payload (compare actual data)
-            </label>
-          </div>
-          
-          <div>
-            <label style="display:flex; align-items:center; font-weight:normal; cursor:pointer;">
-              <input type="radio" name="verification_type" value="hash" id="hashRadio" style="margin-right:8px;" {% if verification_type == "hash" %}checked{% endif %}>
-              Verify using Hash (compare data fingerprint)
-            </label>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="verification_type" value="payload" id="payloadRadio" {% if verification_type == "payload" or not verification_type %}checked{% endif %}>
+              <label for="payloadRadio">
+                <span class="radio-title">Verify using JSON Payload</span>
+                <span class="radio-description">Compare actual data</span>
+              </label>
+            </div>
+            
+            <div class="radio-option">
+              <input type="radio" name="verification_type" value="hash" id="hashRadio" {% if verification_type == "hash" %}checked{% endif %}>
+              <label for="hashRadio">
+                <span class="radio-title">Verify using Hash</span>
+                <span class="radio-description">Compare data fingerprint</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -103,8 +107,67 @@
       pointer-events: none;
     }
     
-    input[type="radio"] {
-      transform: scale(1.2);
+    /* Clean radio button styling */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .radio-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .radio-option:hover {
+      border-color: #007bff;
+      background-color: #f8f9ff;
+    }
+    
+    .radio-option input[type="radio"] {
+      margin: 0;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #007bff;
+    }
+    
+    .radio-option input[type="radio"]:checked + label .radio-title {
+      color: #007bff;
+      font-weight: 600;
+    }
+    
+    .radio-option:has(input:checked) {
+      border-color: #007bff;
+      background-color: #f8f9ff;
+    }
+    
+    .radio-option label {
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      margin: 0;
+    }
+    
+    .radio-title {
+      font-weight: 500;
+      color: #495057;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    
+    .radio-description {
+      font-size: 12px;
+      color: #6c757d;
     }
     
     textarea, input[type="text"] {
@@ -115,6 +178,18 @@
       background-color: #f8f9fa !important;
       color: #6c757d !important;
       cursor: not-allowed !important;
+    }
+
+    /* Remove any unwanted highlighting */
+    input[type="radio"]:focus {
+      outline: 2px solid #007bff;
+      outline-offset: 2px;
+    }
+
+    /* Remove yellow highlighting if present */
+    input[type="radio"]:focus-visible {
+      outline: 2px solid #007bff;
+      outline-offset: 2px;
     }
   </style>
 
