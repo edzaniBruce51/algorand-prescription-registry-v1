@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, redirect, flash, jsonify, url_for
 import json   # For encoding and decoding JSON data.
 import os     # Access environment variables
-import requests    # To send HTTP requests to the BaaS API
-from dotenv import load_dotenv   #Loads .env file for secret configuration
-from datetime import datetime, timezone     # Used for timestamps in UTC.
+import requests    # To send HTTP requests to an external service in this case the BaaS API
+from dotenv import load_dotenv   # Loads .env file for storing secrets like API keys 
+from datetime import datetime, timezone     # datetime to work with timestamps ( UTC is often needed for blockchain)
 
 load_dotenv()
 
@@ -11,6 +11,7 @@ app = Flask(__name__)  #Initializes Flask app.
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'fallback-secret-for-dev-only')   # Loads secret key for session management and flash messages.
 
 # BaaS API Configuration
+# Keeps sensitive information (API keys, endpoints) out of code.
 BLOCKAPI_BASE_URL = os.getenv("BLOCKAPI_BASE_URL", "https://blockapi.co.za/api/v1")
 BLOCKAPI_API_KEY = os.getenv("BLOCKAPI_API_KEY")    # API key for authentication
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")      # Where the BaaS platform will POST blockchain notifications.

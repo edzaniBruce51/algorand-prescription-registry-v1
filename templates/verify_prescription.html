@@ -232,15 +232,20 @@
       // Set initial state
       if (!payloadRadio.checked && !hashRadio.checked) {
         // Default to payload if nothing is selected
+        // If neither radio is chosen, it defaults to payload mode and updates the form.
         payloadRadio.checked = true;
       }
       updateFormState();
       
       // Add event listeners
+      // Listen for changes
       payloadRadio.addEventListener('change', updateFormState);
       hashRadio.addEventListener('change', updateFormState);
       
       // Form validation
+      // check if verification type is selected
+      // if payload → JSON must not be empty
+      // if hash → hash input must not be empty
       document.getElementById('verificationForm').addEventListener('submit', function(e) {
         const verificationType = document.querySelector('input[name="verification_type"]:checked');
         
