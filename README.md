@@ -67,6 +67,47 @@ Visit `http://127.0.0.1:5000` to register and view songs.
   }
 }
 
+## Workflow
+
+### Step 1: Patient Details Entry
+![Step 1 - Patient Details](screenshots/step1-patient-details.jpg)
+*Enter patient's full name, date of birth, prescription date, and medication name*
+
+### Step 2: Prescription Details
+![Step 2 - Prescription Details](screenshots/step2-prescription-details.jpg)
+*Add dosage & strength, route of administration, frequency & duration, quantity to dispense, and refill information*
+
+### Step 3: Prescriber & Review
+![Step 3 - Prescriber & Review](screenshots/step3-prescriber-review.jpg)
+*Add prescriber's signature & credentials, then review all prescription details before submission*
+
+### Step 4: Prescription Registration Success (Pending)
+![Step 4 - Registration Pending](screenshots/step4-registration-pending.jpg)
+*Prescription is registered successfully with a tracking ID and BaaS Task ID. Status shows as "pending" while blockchain processing occurs*
+
+### Step 5: Blockchain Confirmation Complete
+![Step 5 - Confirmation Complete](screenshots/step5-confirmation-complete.jpg)
+*Prescription status changes to "confirmed" with payload hash and full prescription details displayed*
+
+### Step 6: Verification Interface
+![Step 6 - Verification Interface](screenshots/step6-verification-interface.jpg)
+*Access the verification page by entering the transaction ID. Choose between JSON payload verification or hash verification methods*
+
+### Step 7: Hash Verification Method
+![Step 7 - Hash Verification](screenshots/step7-hash-verification.jpg)
+*Select "Verify using Hash" option and enter the Base64 SHA-256 hash to verify the data fingerprint*
+
+### Step 8: Hash Verification Process
+![Step 8 - Hash Verification Process](screenshots/step8-hash-verification-process.jpg)
+*Paste the complete JSON data and enter the hash value for verification*
+
+### Step 9: Successful Verification Result
+![Step 9 - Verification Result](screenshots/step9-verification-result.jpg)
+*System confirms successful hash verification with detailed verification results showing the data integrity match*
+
+## Live Demo
+
+🌐 **Try the live application:** https://algorand-prescription-registry-v1.onrender.com
 
 ## Tech Stack
 
@@ -82,7 +123,6 @@ Visit `http://127.0.0.1:5000` to register and view songs.
 ✅ **Webhook-driven** - updates -> async & scalable
 ✅ **Transparent** - Transaction IDs verifiable on Algorand Explorer
 ✅ **No private keys** - no risk of wallet exposure 
-
 
 ## Business Value
 
